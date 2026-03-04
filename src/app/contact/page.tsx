@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Container from "@/components/Container";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -11,6 +11,7 @@ import {
   FaPaperPlane,
   FaHeadset,
   FaCheckCircle,
+  FaShieldAlt,
 } from "react-icons/fa";
 
 const fadeInUp = {
@@ -28,7 +29,51 @@ const stagger = {
 };
 
 export default function ContactPage() {
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    if (!sent && !errorMsg) return;
+    const t = setTimeout(() => {
+      setSent(false);
+      setErrorMsg("");
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [sent, errorMsg]);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSent(false);
+    setErrorMsg("");
+
+    if (!form.name || !form.email || !form.message) {
+      setErrorMsg("Please fill all fields.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const json = await res.json();
+
+      if (res.ok) {
+        setSent(true);
+        setForm({ name: "", email: "", message: "" });
+      } else {
+        setErrorMsg(json.message || "Something went wrong.");
+      }
+    } catch (err) {
+      setErrorMsg("Connection error.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <main className="bg-white min-h-screen">
@@ -72,7 +117,7 @@ export default function ContactPage() {
                 },
                 {
                   label: "Email",
-                  val: "contact@primecare.com",
+                  val: "contact@primecareclinic.com",
                   icon: <FaEnvelope />,
                 },
                 {
@@ -119,38 +164,73 @@ export default function ContactPage() {
                   successfully.
                 </motion.div>
               )}
+              {errorMsg && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="mb-8 rounded-2xl border border-red-100 bg-red-50 p-5 text-base font-bold text-red-700 flex items-center gap-3 overflow-hidden"
+                >
+                  <FaShieldAlt className="text-xl" /> {errorMsg}
+                </motion.div>
+              )}
             </AnimatePresence>
 
-            <div className="space-y-6">
+            <form onSubmit={onSubmit} className="space-y-6">
               <div className="space-y-2">
                 <input
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="Your Name"
+                  disabled={loading}
                   className="w-full rounded-2xl border border-slate-200 px-6 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all bg-slate-50/30"
                 />
               </div>
               <div className="space-y-2">
                 <input
+                  required
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
                   placeholder="Email Address"
+                  disabled={loading}
                   className="w-full rounded-2xl border border-slate-200 px-6 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all bg-slate-50/30"
                 />
               </div>
               <div className="space-y-2">
                 <textarea
+                  required
                   rows={4}
+                  value={form.message}
+                  onChange={(e) =>
+                    setForm({ ...form, message: e.target.value })
+                  }
                   placeholder="Describe your inquiry..."
+                  disabled={loading}
                   className="w-full rounded-2xl border border-slate-200 px-6 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all bg-slate-50/30 resize-none"
                 />
               </div>
 
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setSent(true)}
-                className="w-full h-16 rounded-[1.5rem] bg-blue-600 text-white font-black text-lg shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-4"
+                whileHover={{ scale: loading ? 1 : 1.02 }}
+                whileTap={{ scale: loading ? 1 : 0.98 }}
+                type="submit"
+                disabled={loading}
+                className="w-full h-16 rounded-[1.5rem] bg-blue-600 text-white font-black text-lg shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
               >
-                <FaPaperPlane className="text-xl" /> Send Message
+                {loading ? (
+                  <>
+                    <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <FaPaperPlane className="text-xl" /> Send Message
+                  </>
+                )}
               </motion.button>
-            </div>
+            </form>
           </motion.div>
         </motion.div>
       </Container>

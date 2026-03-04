@@ -134,10 +134,10 @@ export default function DoctorsPage() {
               </div>
 
               <Link
-                href="/appointment"
+                href={`/appointment?doctor=${encodeURIComponent(d.name)}`}
                 className="mt-8 px-6 py-4 rounded-2xl bg-blue-600 text-white font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all text-center flex items-center justify-center gap-2"
               >
-                Inquiry <FaArrowRight className="text-xs" />
+                Book with this doctor <FaArrowRight className="text-xs" />
               </Link>
             </motion.div>
           ))}

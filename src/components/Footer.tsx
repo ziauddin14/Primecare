@@ -52,6 +52,20 @@ export default function Footer() {
               smart booking. We provide world-class healthcare with a human
               touch.
             </p>
+            <div className="mt-6 space-y-2 text-sm text-slate-500">
+              <p className="flex items-center gap-2">
+                <span className="font-bold text-slate-700">Phone:</span>{" "}
+                0300-1234567
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="font-bold text-slate-700">Email:</span>{" "}
+                contact@primecareclinic.com
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="font-bold text-slate-700">Address:</span> Main
+                Boulevard, Lahore
+              </p>
+            </div>
           </div>
 
           {/* Link Columns */}
