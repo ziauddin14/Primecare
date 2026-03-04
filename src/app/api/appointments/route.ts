@@ -58,18 +58,22 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, phone, email, doctor, date, time } = validation.data;
+    let { name, phone, email, doctor, date, time } = validation.data;
+
+    // Normalization
+    email = email.trim().toLowerCase();
+    phone = phone.replace(/\s|-/g, "");
 
     const client = await clientPromise;
     const db = client.db();
     const col = db.collection("appointments");
 
     // Duplicate Prevention
-    // Logic: Same phone OR email AND same date AND same time
+    // Logic: same date + same time + (same phone OR same email)
     const existing = await col.findOne({
-      $or: [{ phone }, { email }],
       date,
       time,
+      $or: [{ phone }, { email }],
     });
 
     if (existing) {
