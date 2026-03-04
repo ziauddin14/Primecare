@@ -50,7 +50,7 @@ export default function AdminPage() {
             <div>
               <h1 className="h1-tight">Admin Console</h1>
               <p className="subtext font-medium">
-                Manage clinical 상담 appointments.
+                Manage clinical appointments.
               </p>
             </div>
             <button
