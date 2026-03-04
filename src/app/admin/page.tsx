@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Container from "@/components/Container";
+import { FaSyncAlt, FaSignOutAlt } from "react-icons/fa";
 
 type Appointment = {
   _id?: string;
@@ -18,12 +20,17 @@ export default function AdminPage() {
   const [data, setData] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [errMsg, setErrMsg] = useState("");
+  const router = useRouter();
 
   const load = async () => {
     setLoading(true);
     setErrMsg("");
     try {
       const res = await fetch("/api/appointments");
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
       if (!res.ok) {
         setData([]);
         setErrMsg("System waiting for DB sync.");
@@ -38,27 +45,45 @@ export default function AdminPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+      router.refresh();
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
+
   useEffect(() => {
     load();
   }, []);
 
   return (
     <main className="bg-white min-h-screen">
-      <div className="bg-slate-50 border-b border-slate-100">
+      <div className="bg-slate-50 border-b border-slate-100 py-6 sm:py-10">
         <Container>
-          <div className="section-tight flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="h1-tight">Admin Console</h1>
               <p className="subtext font-medium">
                 Manage clinical appointments.
               </p>
             </div>
-            <button
-              onClick={load}
-              className="btn-tight border border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
-            >
-              Refresh Node
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={load}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 font-bold text-sm hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+              >
+                <FaSyncAlt className={loading ? "animate-spin" : ""} /> Refresh
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 text-red-600 font-bold text-sm hover:bg-red-100 transition-all active:scale-95 shadow-sm border border-red-100"
+              >
+                <FaSignOutAlt /> Sign Out
+              </button>
+            </div>
           </div>
         </Container>
       </div>
