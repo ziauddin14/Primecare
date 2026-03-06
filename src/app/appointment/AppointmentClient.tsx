@@ -18,18 +18,17 @@ import {
   FaClock,
 } from "react-icons/fa";
 
-const doctorsList = [
-  "Dr. Ahmed Khan (General)",
-  "Dr. Sara Malik (Dental)",
-  "Dr. Ali Raza (Pediatrics)",
-  "Dr. Hina Shah (Cardiology)",
-];
+type Doctor = {
+  _id: string;
+  name: string;
+  department: string;
+};
 
 type FormState = {
   name: string;
   phone: string;
   email: string;
-  doctor: string;
+  doctorId: string; // Changed from doctor (string) to doctorId (mongoId)
   date: string;
   time: string;
 };
@@ -38,7 +37,7 @@ const initialState: FormState = {
   name: "",
   phone: "",
   email: "",
-  doctor: "",
+  doctorId: "",
   date: "",
   time: "",
 };
@@ -52,6 +51,7 @@ const fadeInUp = {
 export default function AppointmentClient() {
   const searchParams = useSearchParams();
   const [form, setForm] = useState<FormState>(initialState);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -63,14 +63,33 @@ export default function AppointmentClient() {
   }, []);
 
   useEffect(() => {
-    const docParam = searchParams.get("doctor");
-    if (docParam) {
-      const match = doctorsList.find((d) => d.includes(docParam));
-      if (match) {
-        setForm((prev) => ({ ...prev, doctor: match }));
+    async function fetchDoctors() {
+      try {
+        const res = await fetch("/api/doctors");
+        const json = await res.json();
+        if (json.ok) {
+          setDoctors(json.doctors || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch doctors", err);
       }
     }
-  }, [searchParams]);
+    fetchDoctors();
+  }, []);
+
+  useEffect(() => {
+    const docParam = searchParams.get("doctor");
+    if (docParam && doctors.length > 0) {
+      const match = doctors.find(
+        (d) =>
+          d.name.toLowerCase().includes(docParam.toLowerCase()) ||
+          d.department.toLowerCase().includes(docParam.toLowerCase()),
+      );
+      if (match) {
+        setForm((prev) => ({ ...prev, doctorId: match._id }));
+      }
+    }
+  }, [searchParams, doctors]);
 
   useEffect(() => {
     if (!successMsg && !errorMsg) return;
@@ -96,11 +115,11 @@ export default function AppointmentClient() {
     const nextErrors: Record<string, string> = {};
     if (!form.name.trim()) nextErrors.name = "Required";
     if (!form.phone.trim()) nextErrors.phone = "Required";
-    if (!form.email.trim()) nextErrors.email = "Required";
-    if (!form.doctor) nextErrors.doctor = "Required";
+    if (!form.doctorId) nextErrors.doctorId = "Required";
     if (!form.date) nextErrors.date = "Required";
     if (!form.time) nextErrors.time = "Required";
 
+    // Email is optional in new patient model but we'll keep it for better communication if provided
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -260,6 +279,7 @@ export default function AppointmentClient() {
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
                   <FaEnvelope className="text-[14px]" /> Email Address
+                  (Optional)
                 </label>
                 <input
                   type="email"
@@ -276,18 +296,24 @@ export default function AppointmentClient() {
                   <FaUserMd className="text-[14px]" /> Clinical Specialist
                 </label>
                 <select
-                  value={form.doctor}
-                  onChange={(e) => updateField("doctor", e.target.value)}
-                  className={`w-full rounded-2xl border ${errors.doctor ? "border-red-500" : "border-slate-200"} px-5 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all appearance-none bg-white`}
+                  value={form.doctorId}
+                  onChange={(e) => updateField("doctorId", e.target.value)}
+                  className={`w-full rounded-2xl border ${errors.doctorId ? "border-red-500" : "border-slate-200"} px-5 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all appearance-none bg-white`}
                   disabled={loading}
                 >
-                  <option value="">Select Department...</option>
-                  {doctorsList.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
+                  <option value="">Select Specialist...</option>
+                  {doctors.map((d) => (
+                    <option key={d._id} value={d._id}>
+                      {d.name} ({d.department})
                     </option>
                   ))}
                 </select>
+                {/* Fallback if no doctors loaded */}
+                {doctors.length === 0 && !loading && (
+                  <p className="text-[10px] text-slate-500 px-1 italic">
+                    Loading specialists or system offline...
+                  </p>
+                )}
               </div>
 
               <div className="grid gap-6 sm:grid-cols-2">

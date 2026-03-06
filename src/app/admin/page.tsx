@@ -7,13 +7,23 @@ import { FaSyncAlt, FaSignOutAlt } from "react-icons/fa";
 
 type Appointment = {
   _id?: string;
-  name: string;
-  phone: string;
-  email: string;
-  doctor: string;
+  patientId: string;
+  doctorId: string;
+  department: string;
   date: string;
-  time: string;
+  startTime: string;
+  endTime: string;
+  status: string;
   createdAt?: string;
+  patientInfo: {
+    fullName: string;
+    phone: string;
+    email: string;
+  };
+  doctorInfo: {
+    name: string;
+    department: string;
+  };
 };
 
 export default function AdminPage() {
@@ -37,7 +47,7 @@ export default function AdminPage() {
         return;
       }
       const json = await res.json();
-      setData(Array.isArray(json) ? json : (json?.appointments ?? []));
+      setData(json.appointments || []);
     } catch {
       setErrMsg("Network error.");
     } finally {
@@ -112,27 +122,52 @@ export default function AdminPage() {
                       <th className="px-6 py-3">Contact</th>
                       <th className="px-6 py-3">Specialist</th>
                       <th className="px-6 py-3">Schedule</th>
+                      <th className="px-6 py-3">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {data.map((a, i) => (
+                    {data.map((a) => (
                       <tr
-                        key={a._id ?? i}
+                        key={a._id}
                         className="text-sm font-semibold text-slate-800 hover:bg-slate-50 transition"
                       >
-                        <td className="px-6 py-4">{a.name}</td>
-                        <td className="px-6 py-4 text-xs text-slate-500">
-                          {a.phone}
-                          <br />
-                          {a.email}
+                        <td className="px-6 py-4">
+                          {a.patientInfo?.fullName || "Unknown"}
                         </td>
-                        <td className="px-6 py-4">{a.doctor}</td>
+                        <td className="px-6 py-4 text-xs text-slate-500">
+                          {a.patientInfo?.phone}
+                          {a.patientInfo?.email && (
+                            <>
+                              <br />
+                              {a.patientInfo.email}
+                            </>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          {a.doctorInfo?.name}
+                          <span className="block text-[10px] text-slate-400 uppercase">
+                            {a.doctorInfo?.department}
+                          </span>
+                        </td>
                         <td className="px-6 py-4 text-xs">
                           <span className="text-slate-900 font-bold">
                             {a.date}
                           </span>
                           <span className="block text-blue-600 font-black">
-                            {a.time}
+                            {a.startTime} - {a.endTime}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-2 py-1 rounded-full text-[10px] uppercase font-bold ${
+                              a.status === "NEW"
+                                ? "bg-blue-50 text-blue-600"
+                                : a.status === "CONFIRMED"
+                                  ? "bg-green-50 text-green-600"
+                                  : "bg-slate-50 text-slate-600"
+                            }`}
+                          >
+                            {a.status}
                           </span>
                         </td>
                       </tr>
