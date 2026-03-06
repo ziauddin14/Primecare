@@ -85,10 +85,9 @@ export default function ReceptionDashboard() {
   const [search, setSearch] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // Workflow States
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
   const [updateNote, setUpdateNote] = useState("");
-  const [showNoteInput, setShowNoteInput] = useState<string | null>(null); // appointmentId
+  const [showNoteInput, setShowNoteInput] = useState<string | null>(null);
   const [pendingStatus, setPendingStatus] = useState<AppointmentStatus | null>(
     null,
   );
@@ -112,8 +111,6 @@ export default function ReceptionDashboard() {
       if (json.ok) {
         setData(json.appointments || []);
         setStats(json.stats);
-
-        // Refresh selected appointment if open
         if (selectedApp) {
           const updated = (json.appointments || []).find(
             (a: any) => a._id === selectedApp._id,
@@ -152,16 +149,6 @@ export default function ReceptionDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/login");
-      router.refresh();
-    } catch (err) {
-      console.error("Logout failed", err);
-    }
-  };
-
   useEffect(() => {
     load();
   }, []);
@@ -175,62 +162,38 @@ export default function ReceptionDashboard() {
   }, [data, search]);
 
   return (
-    <main className="bg-[#f8fafc] min-h-screen pb-20 relative overflow-x-hidden">
-      {/* Header Section */}
-      <div className="bg-white border-b border-slate-100 py-6 sticky top-0 z-30 shadow-sm">
-        <Container>
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-100">
-                <FaNotesMedical className="text-white text-xl" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-1">
-                  Reception Counter
-                </h1>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />{" "}
-                  Live Clinic Activity
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="relative group">
-                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search Patient / Phone..."
-                  className="pl-11 pr-6 py-3 rounded-2xl bg-slate-50 border border-slate-100 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all w-full sm:w-[300px]"
-                />
-              </div>
-              <button
-                onClick={load}
-                disabled={loading}
-                className="p-3 rounded-2xl bg-white border border-slate-200 text-slate-900 hover:bg-slate-50 transition-all transition-active active:scale-95 disabled:opacity-50"
-              >
-                <FaSyncAlt className={loading ? "animate-spin" : ""} />
-              </button>
-              <button
-                onClick={() => router.push("/admin/analytics")}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-blue-50 text-blue-600 font-bold text-sm hover:bg-blue-100 transition-all active:scale-95 border border-blue-100 shadow-sm"
-              >
-                <FaChartPie /> Analytics
-              </button>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-red-50 text-red-600 font-bold text-sm hover:bg-red-100 transition-all active:scale-95 border border-red-100 shadow-sm"
-              >
-                <FaSignOutAlt /> Sign Out
-              </button>
-            </div>
-          </div>
-        </Container>
-      </div>
-
+    <div className="py-12">
       <Container>
-        <div className="py-8 space-y-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between mb-10">
+          <div>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none mb-2">
+              Reception Counter
+            </h1>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />{" "}
+              Live Daily Operational Flow
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative group">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Patient / Phone..."
+                className="pl-11 pr-6 py-3 rounded-2xl bg-white border border-slate-100 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all w-full sm:w-[250px] shadow-sm"
+              />
+            </div>
+            <button
+              onClick={load}
+              className="p-4 rounded-2xl bg-white border border-slate-100 text-slate-900 hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+            >
+              <FaSyncAlt className={loading ? "animate-spin" : ""} />
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-12">
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
             {[
@@ -309,10 +272,9 @@ export default function ReceptionDashboard() {
             <div className="lg:col-span-3 space-y-6">
               <div className="flex items-center justify-between px-2">
                 <h2 className="text-lg font-black text-slate-800 flex items-center gap-3">
-                  <FaClock className="text-blue-600" /> Today's Pipeline
+                  <FaClock className="text-blue-600" /> Today&apos;s Pipeline
                 </h2>
               </div>
-
               <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden min-h-[400px]">
                 <div className="w-full overflow-x-auto">
                   <table className="w-full text-left">
@@ -512,7 +474,6 @@ export default function ReceptionDashboard() {
               <h2 className="text-lg font-black text-slate-800 flex items-center gap-3 px-2">
                 Quick Desk
               </h2>
-
               <div className="space-y-3">
                 <button
                   onClick={() => router.push("/appointment")}
@@ -533,7 +494,6 @@ export default function ReceptionDashboard() {
                   </div>
                   <FaSyncAlt className="text-white/20 group-hover:rotate-180 transition-transform duration-500" />
                 </button>
-
                 <button className="w-full flex items-center justify-between p-6 rounded-[2rem] bg-slate-900 text-white hover:bg-black transition-all group shadow-xl shadow-slate-200 active:scale-95">
                   <div className="flex items-center gap-4">
                     <div className="bg-white/10 p-3 rounded-2xl">
@@ -549,7 +509,6 @@ export default function ReceptionDashboard() {
                     </div>
                   </div>
                 </button>
-
                 <button
                   onClick={() => router.push("/admin/patients")}
                   className="w-full flex items-center justify-between p-6 rounded-[2rem] bg-white border border-slate-100 text-slate-900 hover:border-blue-200 transition-all group shadow-sm active:scale-95"
@@ -569,16 +528,15 @@ export default function ReceptionDashboard() {
                   </div>
                 </button>
               </div>
-
-              {/* Health Reminder or Shift Notes */}
               <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-2xl relative overflow-hidden">
                 <div className="relative z-10">
                   <h4 className="text-xs font-black uppercase tracking-widest text-white/50 mb-4">
                     Reception Note
                   </h4>
                   <p className="text-sm font-semibold leading-relaxed mb-6 italic">
-                    "Patient arrivals are peaking between 10:00 AM and 11:30 AM.
-                    Ensure all 'Pending' items are confirmed before peak."
+                    &quot;Patient arrivals are peaking between 10:00 AM and
+                    11:30 AM. Ensure all &apos;Pending&apos; items are confirmed
+                    before peak.&quot;
                   </p>
                   <div className="h-1 w-12 bg-white/30 rounded-full" />
                 </div>
@@ -628,9 +586,7 @@ export default function ReceptionDashboard() {
                   ×
                 </button>
               </div>
-
               <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
-                {/* Info Card */}
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100">
@@ -665,8 +621,6 @@ export default function ReceptionDashboard() {
                     <FaClock className="text-6xl text-white/5 absolute -right-2 -bottom-2 rotate-12" />
                   </div>
                 </div>
-
-                {/* Specialist */}
                 <div>
                   <h3 className="text-sm font-black text-slate-900 mb-4 flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />{" "}
@@ -686,17 +640,13 @@ export default function ReceptionDashboard() {
                     </div>
                   </div>
                 </div>
-
-                {/* Status Timeline */}
                 <div>
                   <h3 className="text-sm font-black text-slate-900 mb-6 flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />{" "}
                     Activity Timeline
                   </h3>
                   <div className="relative space-y-8 pl-8">
-                    {/* Vertical Line */}
                     <div className="absolute left-[3.5px] top-2 bottom-2 w-0.5 bg-slate-100" />
-
                     {(selectedApp.statusHistory || []).map(
                       (h: any, idx: number) => {
                         const st =
@@ -704,7 +654,6 @@ export default function ReceptionDashboard() {
                           statusFlow[0];
                         return (
                           <div key={idx} className="relative">
-                            {/* Dot */}
                             <div
                               className={`absolute -left-[31px] top-1 px-1 h-2 w-2 rounded-full border-2 border-white ${st.color.split(" ")[0]} ring-4 ring-slate-50`}
                             />
@@ -723,7 +672,7 @@ export default function ReceptionDashboard() {
                                 </span>
                               </div>
                               <p className="text-[11px] font-bold text-slate-500 leading-relaxed italic">
-                                "{h.note || "No notes provided."}"
+                                &quot;{h.note || "No notes provided."}&quot;
                               </p>
                               <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
                                 By {h.updatedBy || "admin"}
@@ -733,31 +682,9 @@ export default function ReceptionDashboard() {
                         );
                       },
                     )}
-                    {(!selectedApp.statusHistory ||
-                      selectedApp.statusHistory.length === 0) && (
-                      <div className="flex flex-col py-4 text-slate-300 items-center justify-center border-2 border-dashed border-slate-100 rounded-3xl">
-                        <FaInfoCircle className="text-2xl mb-2" />
-                        <p className="text-[10px] font-black uppercase">
-                          No history tracked.
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
-
-                {/* Internal Notes area */}
-                {(selectedApp.internalNotes || selectedApp.notes) && (
-                  <div className="p-6 rounded-[2rem] bg-amber-50 border border-amber-100">
-                    <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-                      <FaInfoCircle /> Internal Notes
-                    </h4>
-                    <p className="text-xs font-bold text-slate-700 leading-relaxed">
-                      {selectedApp.internalNotes || selectedApp.notes}
-                    </p>
-                  </div>
-                )}
               </div>
-
               <div className="p-8 border-t border-slate-100 bg-slate-50/50">
                 <button
                   onClick={() => setSelectedApp(null)}
@@ -770,6 +697,6 @@ export default function ReceptionDashboard() {
           </>
         )}
       </AnimatePresence>
-    </main>
+    </div>
   );
 }

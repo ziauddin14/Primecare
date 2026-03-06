@@ -61,47 +61,37 @@ export default function PatientsListing() {
   }, [data, search]);
 
   return (
-    <main className="bg-[#f8fafc] min-h-screen pb-20">
-      <div className="bg-white border-b border-slate-100 py-8 sticky top-0 z-20 shadow-sm">
-        <Container>
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="bg-blue-600 p-4 rounded-3xl shadow-lg shadow-blue-100">
-                <FaUserInjured className="text-white text-2xl" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-1">
-                  Master Directory
-                </h1>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  Patient Profiles & Records
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="relative group">
-                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search Name / Phone..."
-                  className="pl-11 pr-6 py-3 rounded-2xl bg-slate-50 border border-slate-100 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all w-[300px]"
-                />
-              </div>
-              <button
-                onClick={load}
-                className="p-4 rounded-2xl bg-white border border-slate-200 text-slate-900 hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
-              >
-                <FaSyncAlt className={loading ? "animate-spin" : ""} />
-              </button>
-            </div>
-          </div>
-        </Container>
-      </div>
-
+    <div className="py-12">
       <Container>
-        <div className="py-10 space-y-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between mb-10">
+          <div>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none mb-2">
+              Master Directory
+            </h1>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              Patient Profiles & Clinical Records
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative group">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search Name / Phone..."
+                className="pl-11 pr-6 py-3 rounded-2xl bg-white border border-slate-100 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all w-full sm:w-[250px] shadow-sm"
+              />
+            </div>
+            <button
+              onClick={load}
+              className="p-4 rounded-2xl bg-white border border-slate-100 text-slate-900 hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+            >
+              <FaSyncAlt className={loading ? "animate-spin" : ""} />
+            </button>
+          </div>
+        </div>
+
+        <div className="py-10 space-y-10">
           <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden min-h-[500px]">
             <div className="w-full overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -181,7 +171,7 @@ export default function PatientsListing() {
                           </div>
                         </td>
                         <td className="px-8 py-7 text-center">
-                          <button className="h-10 w-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all active:scale-95 shadow-sm border border-slate-200">
+                          <button className="h-10 w-10 mx-auto rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all active:scale-95 shadow-sm border border-slate-200">
                             <FaChevronRight className="text-xs group-hover:translate-x-0.5 transition-transform" />
                           </button>
                         </td>
@@ -206,6 +196,6 @@ export default function PatientsListing() {
           </div>
         </div>
       </Container>
-    </main>
+    </div>
   );
 }

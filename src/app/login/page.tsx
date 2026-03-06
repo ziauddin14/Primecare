@@ -3,18 +3,28 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Container from "@/components/Container";
-import { motion } from "framer-motion";
-import { FaLock, FaUser, FaShieldAlt, FaClinicMedical } from "react-icons/fa";
-import Link from "next/link";
+import {
+  FaHospitalSymbol,
+  FaUserInjured,
+  FaUserMd,
+  FaCheckCircle,
+  FaClock,
+  FaNotesMedical,
+  FaChartPie,
+  FaShieldAlt,
+  FaSyncAlt,
+} from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
   const router = useRouter();
 
-  async function handleLogin(e: React.FormEvent) {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -28,129 +38,115 @@ export default function LoginPage() {
 
       const data = await res.json();
 
-      if (res.ok) {
-        router.push("/admin");
+      if (data.ok) {
+        router.push(data.role === "DOCTOR" ? "/admin/doctor" : "/admin");
         router.refresh();
       } else {
-        setError(data.message || "Invalid credentials");
+        setError(data.message || "Authentication failed");
       }
     } catch (err) {
-      setError("Connection error. Please try again.");
+      setError("Network connection issue.");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <main className="min-h-[calc(100vh-80px)] bg-slate-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <Container>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md mx-auto"
-        >
-          {/* Brand Logo */}
-          <div className="text-center mb-8">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 group mb-4"
-            >
-              <FaClinicMedical className="text-3xl text-blue-600 transition-transform group-hover:scale-110" />
-              <div className="flex">
-                <span className="text-3xl font-bold tracking-tighter text-blue-600">
-                  Prime
-                </span>
-                <span className="text-3xl font-bold tracking-tighter text-slate-900">
-                  Care
-                </span>
-              </div>
-            </Link>
-            <p className="text-slate-500 font-medium">
-              Internal Management Console
+    <main className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 p-20 text-[20rem] text-slate-100 opacity-50 select-none">
+        <FaHospitalSymbol className="rotate-12" />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-[500px] bg-white rounded-[3rem] shadow-2xl shadow-blue-100 border border-slate-100 p-12 overflow-hidden relative z-10"
+      >
+        <div className="flex flex-col items-center gap-4 mb-12">
+          <div className="bg-blue-600 p-5 rounded-[2rem] shadow-2xl shadow-blue-200 text-white text-3xl">
+            <FaHospitalSymbol />
+          </div>
+          <div className="text-center">
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2">
+              Primecare
+            </h1>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] italic">
+              Clinic Intelligence Log
             </p>
           </div>
+        </div>
 
-          {/* Login Card */}
-          <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl shadow-blue-100/50 p-8 sm:p-10">
-            <h1 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-3">
-              <FaShieldAlt className="text-blue-600" /> Admin Login
-            </h1>
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">
+              Access Key
+            </label>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="admin / reception / doctor"
+              required
+              className="w-full h-16 rounded-2xl bg-slate-50 border border-slate-100 px-6 font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">
+              Security Hash
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full h-16 rounded-2xl bg-slate-50 border border-slate-100 px-6 font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+            />
+          </div>
 
+          <AnimatePresence>
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-100 text-red-800 text-sm font-bold flex items-center gap-2"
+                exit={{ opacity: 0 }}
+                className="p-4 rounded-xl bg-red-50 text-red-600 text-xs font-black uppercase tracking-widest border border-red-100 flex items-center gap-3"
               >
-                <FaShieldAlt className="flex-shrink-0" />
-                {error}
+                <FaShieldAlt /> {error}
               </motion.div>
             )}
+          </AnimatePresence>
 
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
-                  <FaUser className="text-[12px]" /> Username
-                </label>
-                <div className="relative group">
-                  <input
-                    type="text"
-                    required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-base font-bold text-slate-900 focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all"
-                    placeholder="Enter username"
-                    disabled={loading}
-                  />
-                </div>
-              </div>
+          <button
+            disabled={loading}
+            className="w-full h-16 rounded-[1.8rem] bg-blue-600 text-white font-black text-xs uppercase tracking-widest shadow-2xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {loading ? (
+              <FaSyncAlt className="animate-spin text-lg" />
+            ) : (
+              "Verify Identity"
+            )}
+          </button>
+        </form>
 
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
-                  <FaLock className="text-[12px]" /> Password
-                </label>
-                <div className="relative group">
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-base font-bold text-slate-900 focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all"
-                    placeholder="••••••••"
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              <motion.button
-                whileHover={{ scale: loading ? 1 : 1.02 }}
-                whileTap={{ scale: loading ? 1 : 0.98 }}
-                type="submit"
-                disabled={loading}
-                className="w-full h-16 mt-4 rounded-3xl bg-blue-600 text-white font-black text-lg shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
-              >
-                {loading ? (
-                  <>
-                    <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Authenticating...
-                  </>
-                ) : (
-                  <>
-                    Sign In <FaLock className="text-sm" />
-                  </>
-                )}
-              </motion.button>
-            </form>
-
-            <div className="mt-8 pt-8 border-t border-slate-100 text-center">
-              <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                Authorized Personnel Only. Unauthorized access is monitored and
-                logged in compliance with clinic security policies.
+        {/* Demo Tip */}
+        <div className="mt-12 p-6 rounded-[2rem] bg-slate-50 border border-slate-100 flex items-center justify-between group">
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-blue-600 text-sm shadow-sm">
+              <span className="font-black">?</span>
+            </div>
+            <div>
+              <h4 className="text-[10px] font-black text-slate-900 uppercase">
+                Demo Access
+              </h4>
+              <p className="text-[9px] font-bold text-slate-400">
+                admin / admin123
               </p>
             </div>
           </div>
-        </motion.div>
-      </Container>
+          <FaClock className="text-slate-200 group-hover:text-blue-200 transition-colors" />
+        </div>
+      </motion.div>
     </main>
   );
 }

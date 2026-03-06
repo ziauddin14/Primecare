@@ -14,12 +14,10 @@ import {
   FaClock,
   FaStethoscope,
   FaRegLightbulb,
-  FaCaretUp,
-  FaCaretDown,
   FaChartPie,
   FaUsers,
 } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 type Range = "today" | "7d" | "30d";
 
@@ -108,49 +106,36 @@ export default function AnalyticsDashboard() {
   }, [data]);
 
   return (
-    <main className="bg-[#f8fafc] min-h-screen pb-20 overflow-x-hidden">
-      {/* Dynamic Header */}
-      <div className="bg-white border-b border-slate-100 py-8 sticky top-0 z-40 shadow-sm">
-        <Container>
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push("/admin")}
-                className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors"
-              >
-                <FaArrowLeft />
-              </button>
-              <div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-1">
-                  Clinic Performance
-                </h1>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  Owner Intelligence Dashboard
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-[1.8rem] border border-slate-200 shadow-inner">
-              {(["today", "7d", "30d"] as Range[]).map((r) => (
-                <button
-                  key={r}
-                  onClick={() => changeRange(r)}
-                  className={`px-6 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${range === r ? "bg-white text-blue-600 shadow-md" : "text-slate-400 hover:text-slate-600"}`}
-                >
-                  {r === "today"
-                    ? "Today"
-                    : r === "7d"
-                      ? "Last 7 Days"
-                      : "Last 30 Days"}
-                </button>
-              ))}
-            </div>
-          </div>
-        </Container>
-      </div>
-
+    <div className="py-12">
       <Container>
-        <div className="py-12 space-y-12">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between mb-10">
+          <div>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none mb-2">
+              Clinic Performance
+            </h1>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              Owner Intelligence Dashboard
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-[1.8rem] border border-slate-200 shadow-inner">
+            {(["today", "7d", "30d"] as Range[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => changeRange(r)}
+                className={`px-6 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${range === r ? "bg-white text-blue-600 shadow-md" : "text-slate-400 hover:text-slate-600"}`}
+              >
+                {r === "today"
+                  ? "Today"
+                  : r === "7d"
+                    ? "Last 7 Days"
+                    : "Last 30 Days"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-12">
           {/* KPI Section */}
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
             {loading
@@ -193,7 +178,6 @@ export default function AnalyticsDashboard() {
               </h2>
               <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden relative">
                 <div className="h-64 w-full flex items-end gap-2 md:gap-4 relative pt-10">
-                  {/* Grid lines */}
                   <div className="absolute inset-0 flex flex-col justify-between pt-10 pointer-events-none">
                     {[0, 1, 2, 3].map((i) => (
                       <div
@@ -202,7 +186,6 @@ export default function AnalyticsDashboard() {
                       />
                     ))}
                   </div>
-
                   {loading ? (
                     <div className="h-full w-full bg-slate-50 animate-pulse rounded-2xl" />
                   ) : (
@@ -226,16 +209,6 @@ export default function AnalyticsDashboard() {
                     ))
                   )}
                 </div>
-                {!loading &&
-                  (!data?.appointmentTrends ||
-                    data.appointmentTrends.length === 0) && (
-                    <div className="h-64 flex flex-col items-center justify-center text-slate-300 gap-2">
-                      <FaChartLine className="text-4xl" />
-                      <p className="text-xs font-black uppercase tracking-widest">
-                        Insufficient trend data
-                      </p>
-                    </div>
-                  )}
               </div>
             </div>
 
@@ -443,6 +416,6 @@ export default function AnalyticsDashboard() {
           </div>
         </div>
       </Container>
-    </main>
+    </div>
   );
 }
