@@ -18,6 +18,7 @@ import {
   FaUsers,
   FaChevronRight,
   FaInfoCircle,
+  FaChartPie,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { Appointment, AppointmentStatus } from "@/lib/models/Appointment";
@@ -210,6 +211,12 @@ export default function ReceptionDashboard() {
                 className="p-3 rounded-2xl bg-white border border-slate-200 text-slate-900 hover:bg-slate-50 transition-all transition-active active:scale-95 disabled:opacity-50"
               >
                 <FaSyncAlt className={loading ? "animate-spin" : ""} />
+              </button>
+              <button
+                onClick={() => router.push("/admin/analytics")}
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-blue-50 text-blue-600 font-bold text-sm hover:bg-blue-100 transition-all active:scale-95 border border-blue-100 shadow-sm"
+              >
+                <FaChartPie /> Analytics
               </button>
               <button
                 onClick={handleLogout}
