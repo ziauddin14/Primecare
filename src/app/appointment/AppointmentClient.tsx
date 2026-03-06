@@ -52,6 +52,8 @@ export default function AppointmentClient() {
   const searchParams = useSearchParams();
   const [form, setForm] = useState<FormState>(initialState);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -90,6 +92,36 @@ export default function AppointmentClient() {
       }
     }
   }, [searchParams, doctors]);
+
+  // Fetch Available Slots
+  useEffect(() => {
+    if (!form.doctorId || !form.date) {
+      setAvailableSlots([]);
+      return;
+    }
+
+    async function fetchSlots() {
+      setSlotsLoading(true);
+      try {
+        const res = await fetch(
+          `/api/slots?doctorId=${form.doctorId}&date=${form.date}`,
+        );
+        const json = await res.json();
+        if (json.ok) {
+          setAvailableSlots(json.availableSlots || []);
+          // Reset time if selected slot is no longer available
+          if (form.time && !json.availableSlots.includes(form.time)) {
+            setForm((prev) => ({ ...prev, time: "" }));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch slots", err);
+      } finally {
+        setSlotsLoading(false);
+      }
+    }
+    fetchSlots();
+  }, [form.doctorId, form.date]);
 
   useEffect(() => {
     if (!successMsg && !errorMsg) return;
@@ -248,7 +280,7 @@ export default function AppointmentClient() {
               )}
             </AnimatePresence>
 
-            <form onSubmit={onSubmit} className="space-y-6">
+            <form onSubmit={onSubmit} className="space-y-8">
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
@@ -291,32 +323,25 @@ export default function AppointmentClient() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
-                  <FaUserMd className="text-[14px]" /> Clinical Specialist
-                </label>
-                <select
-                  value={form.doctorId}
-                  onChange={(e) => updateField("doctorId", e.target.value)}
-                  className={`w-full rounded-2xl border ${errors.doctorId ? "border-red-500" : "border-slate-200"} px-5 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all appearance-none bg-white`}
-                  disabled={loading}
-                >
-                  <option value="">Select Specialist...</option>
-                  {doctors.map((d) => (
-                    <option key={d._id} value={d._id}>
-                      {d.name} ({d.department})
-                    </option>
-                  ))}
-                </select>
-                {/* Fallback if no doctors loaded */}
-                {doctors.length === 0 && !loading && (
-                  <p className="text-[10px] text-slate-500 px-1 italic">
-                    Loading specialists or system offline...
-                  </p>
-                )}
-              </div>
-
               <div className="grid gap-6 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+                    <FaUserMd className="text-[14px]" /> Clinical Specialist
+                  </label>
+                  <select
+                    value={form.doctorId}
+                    onChange={(e) => updateField("doctorId", e.target.value)}
+                    className={`w-full rounded-2xl border ${errors.doctorId ? "border-red-500" : "border-slate-200"} px-5 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all appearance-none bg-white`}
+                    disabled={loading}
+                  >
+                    <option value="">Select Specialist...</option>
+                    {doctors.map((d) => (
+                      <option key={d._id} value={d._id}>
+                        {d.name} ({d.department})
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
                     <FaCalendarAlt className="text-[14px]" /> Preferred Date
@@ -330,18 +355,51 @@ export default function AppointmentClient() {
                     disabled={loading}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
-                    <FaClock className="text-[14px]" /> Preferred Time
-                  </label>
-                  <input
-                    type="time"
-                    value={form.time}
-                    onChange={(e) => updateField("time", e.target.value)}
-                    className={`w-full rounded-2xl border ${errors.time ? "border-red-500" : "border-slate-200"} px-5 py-4 text-base font-bold text-slate-900`}
-                    disabled={loading}
-                  />
-                </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+                  <FaClock className="text-[14px]" />{" "}
+                  {slotsLoading
+                    ? "Synchronizing Slots..."
+                    : "Available Time Slots"}
+                </label>
+
+                {!form.doctorId || !form.date ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-xs font-bold text-slate-400 italic">
+                    Please select a doctor and date to view available slots.
+                  </div>
+                ) : slotsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="h-6 w-6 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+                  </div>
+                ) : availableSlots.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                    {availableSlots.map((slot) => (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => updateField("time", slot)}
+                        className={`rounded-xl border py-2 text-sm font-black transition-all ${
+                          form.time === slot
+                            ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100"
+                            : "border-slate-200 text-slate-600 hover:border-blue-600 hover:text-blue-600"
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-red-50 border border-red-100 p-6 text-center text-xs font-bold text-red-600">
+                    No slots available for this date. Please try another day.
+                  </div>
+                )}
+                {errors.time && (
+                  <p className="text-red-500 text-[10px] font-bold px-1 uppercase tracking-tighter">
+                    Time slot is required
+                  </p>
+                )}
               </div>
 
               <motion.button
@@ -358,7 +416,7 @@ export default function AppointmentClient() {
                   </>
                 ) : (
                   <>
-                    <FaCalendarAlt className="text-xl" /> Book Appointment
+                    <FaCalendarAlt className="text-xl" /> Confirm Appointment
                   </>
                 )}
               </motion.button>

@@ -77,23 +77,41 @@ export async function POST(req: Request) {
       patient = { ...patientDoc, _id: result.insertedId };
     }
 
-    // 3. Prevent Duplicate Appointment (same patient on same date/time)
-    const existing = await db.collection("appointments").findOne({
+    // 3. Prevent Double Booking
+    // Check if DOCTOR is already booked for this slot
+    const existingDoctorSlot = await db.collection("appointments").findOne({
+      doctorId: doctorId,
+      date,
+      startTime: time,
+      status: { $ne: "CANCELLED" }
+    });
+
+    if (existingDoctorSlot) {
+      return NextResponse.json(
+        { ok: false, message: "This slot is already booked for the selected doctor." },
+        { status: 409 }
+      );
+    }
+
+    // Check if PATIENT already has an appointment at this time
+    const existingPatientSlot = await db.collection("appointments").findOne({
       patientId: patient._id.toString(),
       date,
       startTime: time,
+      status: { $ne: "CANCELLED" }
     });
 
-    if (existing) {
+    if (existingPatientSlot) {
       return NextResponse.json(
         { ok: false, message: "Patient already has an appointment at this time." },
         { status: 409 }
       );
     }
 
-    // Calculate endTime (assume 15 mins slot)
+    // Calculate endTime (using doctor's slotDuration)
+    const slotDuration = doctor.schedule.slotDuration || 15;
     const [h, m] = time.split(":").map(Number);
-    const endMins = (h * 60 + m + 15);
+    const endMins = (h * 60 + m + slotDuration);
     const endTime = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`;
 
     // 4. Create Appointment
