@@ -341,7 +341,15 @@ export default function ReceptionDashboard() {
                                       .join("")}
                                   </div>
                                   <div>
-                                    <h3 className="text-sm font-black text-slate-900 leading-tight mb-0.5 group-hover:text-blue-600 transition-colors">
+                                    <h3
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        router.push(
+                                          `/admin/patients/${a.patientId}`,
+                                        );
+                                      }}
+                                      className="text-sm font-black text-slate-900 leading-tight mb-0.5 hover:text-blue-600 transition-colors cursor-pointer decoration-blue-200/50 hover:underline underline-offset-4"
+                                    >
                                       {a.patientInfo?.fullName}
                                     </h3>
                                     <p className="text-[11px] font-bold text-slate-400 tracking-wide uppercase">
@@ -535,7 +543,10 @@ export default function ReceptionDashboard() {
                   </div>
                 </button>
 
-                <button className="w-full flex items-center justify-between p-6 rounded-[2rem] bg-white border border-slate-100 text-slate-900 hover:border-blue-200 transition-all group shadow-sm active:scale-95">
+                <button
+                  onClick={() => router.push("/admin/patients")}
+                  className="w-full flex items-center justify-between p-6 rounded-[2rem] bg-white border border-slate-100 text-slate-900 hover:border-blue-200 transition-all group shadow-sm active:scale-95"
+                >
                   <div className="flex items-center gap-4">
                     <div className="bg-slate-50 p-3 rounded-2xl group-hover:bg-blue-50 transition-colors">
                       <FaUsers className="text-lg text-slate-400 group-hover:text-blue-600" />
