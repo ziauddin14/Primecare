@@ -16,29 +16,11 @@ import {
   FaUserInjured,
   FaNotesMedical,
   FaUsers,
+  FaChevronRight,
+  FaInfoCircle,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
-
-type Appointment = {
-  _id: string;
-  patientId: string;
-  doctorId: string;
-  department: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: string;
-  createdAt: string;
-  patientInfo: {
-    fullName: string;
-    phone: string;
-    email: string;
-  };
-  doctorInfo: {
-    name: string;
-    department: string;
-  };
-};
+import { Appointment, AppointmentStatus } from "@/lib/models/Appointment";
 
 type Stats = {
   total: number;
@@ -95,12 +77,21 @@ const statusFlow = [
 ];
 
 export default function ReceptionDashboard() {
-  const [data, setData] = useState<Appointment[]>([]);
+  const [data, setData] = useState<any[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [errMsg, setErrMsg] = useState("");
   const [search, setSearch] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  // Workflow States
+  const [selectedApp, setSelectedApp] = useState<any | null>(null);
+  const [updateNote, setUpdateNote] = useState("");
+  const [showNoteInput, setShowNoteInput] = useState<string | null>(null); // appointmentId
+  const [pendingStatus, setPendingStatus] = useState<AppointmentStatus | null>(
+    null,
+  );
+
   const router = useRouter();
 
   const load = async () => {
@@ -120,6 +111,14 @@ export default function ReceptionDashboard() {
       if (json.ok) {
         setData(json.appointments || []);
         setStats(json.stats);
+
+        // Refresh selected appointment if open
+        if (selectedApp) {
+          const updated = (json.appointments || []).find(
+            (a: any) => a._id === selectedApp._id,
+          );
+          if (updated) setSelectedApp(updated);
+        }
       }
     } catch {
       setErrMsg("Network error.");
@@ -128,15 +127,23 @@ export default function ReceptionDashboard() {
     }
   };
 
-  const updateStatus = async (id: string, status: string) => {
+  const updateStatus = async (id: string, status: string, note?: string) => {
     setUpdatingId(id);
     try {
       const res = await fetch(`/api/appointments/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, note }),
       });
-      if (res.ok) load();
+      if (res.ok) {
+        load();
+        setShowNoteInput(null);
+        setUpdateNote("");
+        setPendingStatus(null);
+      } else {
+        const json = await res.json();
+        alert(json.message || "Failed to update status");
+      }
     } catch (err) {
       console.error("Update failed", err);
     } finally {
@@ -167,7 +174,7 @@ export default function ReceptionDashboard() {
   }, [data, search]);
 
   return (
-    <main className="bg-[#f8fafc] min-h-screen pb-20">
+    <main className="bg-[#f8fafc] min-h-screen pb-20 relative overflow-x-hidden">
       {/* Header Section */}
       <div className="bg-white border-b border-slate-100 py-6 sticky top-0 z-30 shadow-sm">
         <Container>
@@ -271,7 +278,7 @@ export default function ReceptionDashboard() {
             ].map((s) => (
               <div
                 key={s.id}
-                className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-3 group hover:border-blue-200 transition-all"
+                className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-3 group hover:border-blue-200 transition-all cursor-default"
               >
                 <div
                   className={`${s.bg} ${s.color} h-10 w-10 rounded-xl flex items-center justify-center text-lg shadow-inner`}
@@ -322,18 +329,19 @@ export default function ReceptionDashboard() {
                               layout
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
-                              className={`${updatingId === a._id ? "opacity-50 grayscale select-none" : ""} hover:bg-slate-50/50 transition-colors`}
+                              className={`${updatingId === a._id ? "opacity-50 grayscale select-none" : ""} hover:bg-slate-50/50 transition-all cursor-pointer group`}
+                              onClick={() => setSelectedApp(a)}
                             >
                               <td className="px-8 py-6">
                                 <div className="flex items-center gap-4">
                                   <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-blue-600 text-xs border border-slate-200">
                                     {a.patientInfo?.fullName
                                       .split(" ")
-                                      .map((n) => n[0])
+                                      .map((n: any) => n[0])
                                       .join("")}
                                   </div>
                                   <div>
-                                    <h3 className="text-sm font-black text-slate-900 leading-tight mb-0.5">
+                                    <h3 className="text-sm font-black text-slate-900 leading-tight mb-0.5 group-hover:text-blue-600 transition-colors">
                                       {a.patientInfo?.fullName}
                                     </h3>
                                     <p className="text-[11px] font-bold text-slate-400 tracking-wide uppercase">
@@ -362,59 +370,103 @@ export default function ReceptionDashboard() {
                                   {currentStatusObj.label}
                                 </span>
                               </td>
-                              <td className="px-8 py-6">
-                                <div className="flex items-center justify-center gap-1.5">
-                                  {a.status === "NEW" && (
-                                    <button
-                                      onClick={() =>
-                                        updateStatus(a._id, "CONFIRMED")
-                                      }
-                                      className="p-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-active active:scale-95 shadow-lg shadow-blue-100 text-xs font-bold px-4"
-                                    >
-                                      Confirm
-                                    </button>
-                                  )}
-                                  {a.status === "CONFIRMED" && (
-                                    <button
-                                      onClick={() =>
-                                        updateStatus(a._id, "ARRIVED")
-                                      }
-                                      className="p-2.5 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition-active active:scale-95 shadow-lg shadow-purple-100 text-xs font-bold px-4"
-                                    >
-                                      Checked-In
-                                    </button>
-                                  )}
-                                  {a.status === "ARRIVED" && (
-                                    <button
-                                      onClick={() =>
-                                        updateStatus(a._id, "IN CONSULTATION")
-                                      }
-                                      className="p-2.5 rounded-xl bg-amber-500 text-white hover:bg-amber-600 transition-active active:scale-95 shadow-lg shadow-amber-100 text-xs font-bold px-4"
-                                    >
-                                      Start Visit
-                                    </button>
-                                  )}
-                                  {a.status === "IN CONSULTATION" && (
-                                    <button
-                                      onClick={() =>
-                                        updateStatus(a._id, "COMPLETED")
-                                      }
-                                      className="p-2.5 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-active active:scale-95 shadow-lg shadow-green-100 text-xs font-bold px-4"
-                                    >
-                                      Finalize
-                                    </button>
-                                  )}
-                                  {["NEW", "CONFIRMED", "ARRIVED"].includes(
-                                    a.status,
-                                  ) && (
-                                    <button
-                                      onClick={() =>
-                                        updateStatus(a._id, "CANCELLED")
-                                      }
-                                      className="p-2.5 rounded-xl bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-active active:scale-95 text-xs font-black"
-                                    >
-                                      ×
-                                    </button>
+                              <td
+                                className="px-8 py-6"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex flex-col items-center gap-2">
+                                  {showNoteInput === a._id ? (
+                                    <div className="flex flex-col gap-2 w-full max-w-[150px]">
+                                      <input
+                                        value={updateNote}
+                                        onChange={(e) =>
+                                          setUpdateNote(e.target.value)
+                                        }
+                                        placeholder="Update Note..."
+                                        autoFocus
+                                        className="text-[10px] font-bold p-2 border border-blue-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-100"
+                                      />
+                                      <div className="flex gap-1 justify-end">
+                                        <button
+                                          onClick={() => setShowNoteInput(null)}
+                                          className="p-1 px-2 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-400"
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            updateStatus(
+                                              a._id,
+                                              pendingStatus!,
+                                              updateNote,
+                                            )
+                                          }
+                                          className="p-1 px-2 rounded-lg bg-blue-600 text-white text-[10px] font-bold"
+                                        >
+                                          Conf.
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      {a.status === "NEW" && (
+                                        <button
+                                          onClick={() => {
+                                            setPendingStatus("CONFIRMED");
+                                            setShowNoteInput(a._id);
+                                          }}
+                                          className="p-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-active active:scale-95 shadow-lg shadow-blue-100 text-xs font-bold px-4"
+                                        >
+                                          Confirm
+                                        </button>
+                                      )}
+                                      {a.status === "CONFIRMED" && (
+                                        <button
+                                          onClick={() => {
+                                            setPendingStatus("ARRIVED");
+                                            setShowNoteInput(a._id);
+                                          }}
+                                          className="p-2.5 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition-active active:scale-95 shadow-lg shadow-purple-100 text-xs font-bold px-4"
+                                        >
+                                          Checked-In
+                                        </button>
+                                      )}
+                                      {a.status === "ARRIVED" && (
+                                        <button
+                                          onClick={() => {
+                                            setPendingStatus("IN CONSULTATION");
+                                            setShowNoteInput(a._id);
+                                          }}
+                                          className="p-2.5 rounded-xl bg-amber-500 text-white hover:bg-amber-600 transition-active active:scale-95 shadow-lg shadow-amber-100 text-xs font-bold px-4"
+                                        >
+                                          Start Visit
+                                        </button>
+                                      )}
+                                      {a.status === "IN CONSULTATION" && (
+                                        <button
+                                          onClick={() => {
+                                            setPendingStatus("COMPLETED");
+                                            setShowNoteInput(a._id);
+                                          }}
+                                          className="p-2.5 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-active active:scale-95 shadow-lg shadow-green-100 text-xs font-bold px-4"
+                                        >
+                                          Finalize
+                                        </button>
+                                      )}
+                                      {["NEW", "CONFIRMED", "ARRIVED"].includes(
+                                        a.status,
+                                      ) && (
+                                        <button
+                                          onClick={() => {
+                                            setPendingStatus("CANCELLED");
+                                            setShowNoteInput(a._id);
+                                          }}
+                                          className="p-2.5 rounded-xl bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-active active:scale-95 text-xs font-black"
+                                        >
+                                          ×
+                                        </button>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
                               </td>
@@ -518,6 +570,188 @@ export default function ReceptionDashboard() {
           </div>
         </div>
       </Container>
+
+      {/* Appointment Detail Drawer */}
+      <AnimatePresence>
+        {selectedApp && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedApp(null)}
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-[450px] bg-white z-50 shadow-2xl flex flex-col"
+            >
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-100">
+                    <FaUserInjured />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900 leading-tight">
+                      Patient Details
+                    </h2>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Workflow Timeline
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedApp(null)}
+                  className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+                {/* Info Card */}
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100">
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">
+                        Patient Name
+                      </h4>
+                      <p className="text-sm font-black text-slate-800">
+                        {selectedApp.patientInfo?.fullName}
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100">
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">
+                        Contact
+                      </h4>
+                      <p className="text-sm font-black text-slate-800">
+                        {selectedApp.patientInfo?.phone}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-6 rounded-[2rem] bg-slate-900 text-white flex items-center justify-between overflow-hidden relative">
+                    <div className="relative z-10">
+                      <h4 className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">
+                        Appointment Slot
+                      </h4>
+                      <p className="text-xl font-black">
+                        {selectedApp.startTime} - {selectedApp.endTime}
+                      </p>
+                      <p className="text-xs font-bold text-blue-400">
+                        {selectedApp.date}
+                      </p>
+                    </div>
+                    <FaClock className="text-6xl text-white/5 absolute -right-2 -bottom-2 rotate-12" />
+                  </div>
+                </div>
+
+                {/* Specialist */}
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 mb-4 flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />{" "}
+                    Clinical Specialist
+                  </h3>
+                  <div className="p-6 rounded-[2rem] border border-slate-100 bg-white flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                      <FaStethoscope />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-slate-900">
+                        {selectedApp.doctorInfo?.name}
+                      </p>
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        {selectedApp.doctorInfo?.department}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status Timeline */}
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 mb-6 flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />{" "}
+                    Activity Timeline
+                  </h3>
+                  <div className="relative space-y-8 pl-8">
+                    {/* Vertical Line */}
+                    <div className="absolute left-[3.5px] top-2 bottom-2 w-0.5 bg-slate-100" />
+
+                    {(selectedApp.statusHistory || []).map(
+                      (h: any, idx: number) => {
+                        const st =
+                          statusFlow.find((s) => s.key === h.status) ||
+                          statusFlow[0];
+                        return (
+                          <div key={idx} className="relative">
+                            {/* Dot */}
+                            <div
+                              className={`absolute -left-[31px] top-1 px-1 h-2 w-2 rounded-full border-2 border-white ${st.color.split(" ")[0]} ring-4 ring-slate-50`}
+                            />
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center justify-between">
+                                <span
+                                  className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${st.color} ${st.border} border shadow-sm`}
+                                >
+                                  {st.label}
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-400">
+                                  {new Date(h.changedAt).toLocaleTimeString(
+                                    [],
+                                    { hour: "2-digit", minute: "2-digit" },
+                                  )}
+                                </span>
+                              </div>
+                              <p className="text-[11px] font-bold text-slate-500 leading-relaxed italic">
+                                "{h.note || "No notes provided."}"
+                              </p>
+                              <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+                                By {h.updatedBy || "admin"}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      },
+                    )}
+                    {(!selectedApp.statusHistory ||
+                      selectedApp.statusHistory.length === 0) && (
+                      <div className="flex flex-col py-4 text-slate-300 items-center justify-center border-2 border-dashed border-slate-100 rounded-3xl">
+                        <FaInfoCircle className="text-2xl mb-2" />
+                        <p className="text-[10px] font-black uppercase">
+                          No history tracked.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Internal Notes area */}
+                {(selectedApp.internalNotes || selectedApp.notes) && (
+                  <div className="p-6 rounded-[2rem] bg-amber-50 border border-amber-100">
+                    <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                      <FaInfoCircle /> Internal Notes
+                    </h4>
+                    <p className="text-xs font-bold text-slate-700 leading-relaxed">
+                      {selectedApp.internalNotes || selectedApp.notes}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-8 border-t border-slate-100 bg-slate-50/50">
+                <button
+                  onClick={() => setSelectedApp(null)}
+                  className="w-full py-4 rounded-2xl bg-white border border-slate-200 text-slate-900 font-black text-sm hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+                >
+                  Close Panel
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </main>
   );
 }

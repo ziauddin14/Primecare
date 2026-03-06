@@ -13,6 +13,7 @@ const AppointmentSchema = z.object({
   doctorId: z.string().min(1, "Please select a doctor"),
   date: z.string().min(1, "Date is required"),
   time: z.string().min(1, "Time is required"),
+  notes: z.string().optional(),
 });
 
 // Simple In-Memory Rate Limiting
@@ -51,7 +52,7 @@ export async function POST(req: Request) {
       );
     }
 
-    let { name, phone, email, doctorId, date, time } = validation.data;
+    let { name, phone, email, doctorId, date, time, notes } = validation.data;
     email = email?.trim().toLowerCase();
     phone = phone.replace(/\s|-/g, "");
 
@@ -115,6 +116,7 @@ export async function POST(req: Request) {
     const endTime = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`;
 
     // 4. Create Appointment
+    const now = new Date();
     const appointmentDoc = {
       patientId: patient._id.toString(),
       doctorId: doctorId,
@@ -123,10 +125,18 @@ export async function POST(req: Request) {
       startTime: time,
       endTime,
       status: "NEW",
+      statusHistory: [
+        {
+          status: "NEW",
+          changedAt: now,
+          note: "Appointment created via online portal.",
+          updatedBy: "system"
+        }
+      ],
       visitType: "consultation",
-      notes: "",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      notes: notes || "",
+      createdAt: now,
+      updatedAt: now,
     };
 
     const result = await db.collection("appointments").insertOne(appointmentDoc);
