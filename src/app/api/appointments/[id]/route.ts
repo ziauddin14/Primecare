@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { AppointmentStatus } from "@/lib/models/Appointment";
@@ -13,9 +13,9 @@ const VALID_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
   "NO-SHOW": []
 };
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { status, note, reason } = await req.json();
 
     const client = await clientPromise;
