@@ -17,7 +17,9 @@ export async function GET() {
     const client = await clientPromise;
     const db = client.db();
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Intl.DateTimeFormat("en-CA", { 
+      timeZone: "Asia/Karachi" 
+    }).format(new Date());
 
     // For Demo: If role is DOCTOR, filter by doctor name (from cookie)
     // In real app, we'd use doctorId

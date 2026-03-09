@@ -34,7 +34,7 @@ export async function GET() {
                     $filter: {
                       input: "$visits",
                       as: "v",
-                      cond: { $lt: ["$$v.date", new Date().toISOString().split("T")[0]] }
+                      cond: { $lt: ["$$v.date", new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date())] }
                     }
                   },
                   sortBy: { date: -1, startTime: -1 }
@@ -51,7 +51,7 @@ export async function GET() {
                     $filter: {
                       input: "$visits",
                       as: "v",
-                      cond: { $gte: ["$$v.date", new Date().toISOString().split("T")[0]] }
+                      cond: { $gte: ["$$v.date", new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date())] }
                     }
                   },
                   sortBy: { date: 1, startTime: 1 }

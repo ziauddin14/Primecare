@@ -25,7 +25,9 @@ export async function GET(req: Request) {
       startDate.setDate(now.getDate() - 30);
     }
     
-    const startDateStr = startDate.toISOString().split("T")[0];
+    const startDateStr = new Intl.DateTimeFormat("en-CA", { 
+      timeZone: "Asia/Karachi" 
+    }).format(startDate);
 
     // 1. Summary Statistics
     const appointments = await db.collection("appointments").find({

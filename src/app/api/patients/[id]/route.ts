@@ -34,7 +34,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       { $sort: { date: -1, startTime: -1 } }
     ]).toArray();
 
-    const now = new Date().toISOString().split("T")[0];
+    const now = new Intl.DateTimeFormat("en-CA", { 
+      timeZone: "Asia/Karachi" 
+    }).format(new Date());
     
     const visitHistory = appointments.filter(a => a.date < now || (a.date === now && a.status === "COMPLETED"));
     const upcoming = appointments.filter(a => a.date >= now && a.status !== "COMPLETED" && a.status !== "CANCELLED" && a.status !== "NO-SHOW");

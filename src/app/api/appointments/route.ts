@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { z } from "zod";
 import { ObjectId } from "mongodb";
@@ -33,7 +33,7 @@ function checkRateLimit(ip: string) {
   return true;
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get("x-forwarded-for") || "unknown";
     if (!checkRateLimit(ip)) {

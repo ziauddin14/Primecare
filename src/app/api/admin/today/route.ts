@@ -8,7 +8,9 @@ export async function GET() {
     const client = await clientPromise;
     const db = client.db();
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Intl.DateTimeFormat("en-CA", { 
+      timeZone: "Asia/Karachi" 
+    }).format(new Date());
 
     // Fetch all today's appointments with joins
     const appointments = await db.collection("appointments").aggregate([

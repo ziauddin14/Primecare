@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
 const DEMO_ACCOUNTS = [
@@ -7,7 +7,7 @@ const DEMO_ACCOUNTS = [
   { user: "doctor", pass: "doc123", role: "DOCTOR", name: "Dr. Hassan" },
 ];
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { username, password } = await req.json();
     const cookieStore = await cookies();
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       });
 
       cookieStore.set("user_role", authUser.role, {
-        httpOnly: true,
+        httpOnly: false,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         maxAge: 60 * 60 * 24,
