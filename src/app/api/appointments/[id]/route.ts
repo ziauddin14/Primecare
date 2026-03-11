@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { AppointmentStatus } from "@/lib/models/Appointment";
+import { NotificationManager } from "@/lib/notifications/NotificationManager";
+import { NotificationEventType } from "@/lib/notifications/types";
 
 const VALID_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
   "REQUESTED": ["NEW", "CONFIRMED", "CANCELLED"],
@@ -118,6 +120,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         }
       );
 
+      // Notify patient of reschedule
+      const pat = await db.collection("patients").findOne({ _id: new ObjectId(appointment.patientId) });
+      if (pat) {
+        await NotificationManager.trigger(NotificationEventType.APPOINTMENT_RESCHEDULED, {
+          appointmentId: id,
+          patientId: appointment.patientId,
+          patientName: pat.fullName,
+          patientPhone: pat.phone,
+          doctorName: doctor?.name || "Any Specialist",
+          date,
+          time,
+          clinicName: "Primecare Clinic",
+        });
+      }
+
       return NextResponse.json({ ok: true, message: "Appointment rescheduled successfully" });
     }
 
@@ -167,6 +184,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         $push: { statusHistory: historyEntry }
       } as any
     );
+
+    // 5. Trigger Notifications
+    if (nextStatus === "CONFIRMED" || nextStatus === "CANCELLED") {
+       const pat = await db.collection("patients").findOne({ _id: new ObjectId(appointment!.patientId) });
+       const doc = appointment!.doctorId ? await db.collection("doctors").findOne({ _id: new ObjectId(appointment!.doctorId) }) : null;
+       if (pat) {
+          await NotificationManager.trigger(
+            nextStatus === "CONFIRMED" ? NotificationEventType.APPOINTMENT_CONFIRMED : NotificationEventType.APPOINTMENT_CANCELLED,
+            {
+              appointmentId: id,
+              patientId: appointment!.patientId,
+              patientName: pat.fullName,
+              patientPhone: pat.phone,
+              doctorName: doc?.name || "Any Specialist",
+              date: appointment!.date,
+              time: appointment!.startTime,
+              clinicName: "Primecare Clinic",
+              metadata: { reason: reason || "" }
+            }
+          );
+       }
+    }
 
     return NextResponse.json({ 
       ok: true, 

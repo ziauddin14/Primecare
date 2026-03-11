@@ -45,10 +45,14 @@ type Appointment = {
   status: string;
   visitType: string;
   notes?: string;
+  reasonForVisit?: string;
   internalNotes?: string;
-  doctorInfo: {
+  doctorInfo?: {
     name: string;
     department: string;
+  };
+  serviceInfo?: {
+    title: string;
   };
 };
 
@@ -304,10 +308,10 @@ export default function PatientProfile() {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-slate-900 leading-tight mb-1/2">
-                        {upcoming.doctorInfo.name}
+                        {upcoming.doctorInfo?.name || "Any Specialist"}
                       </h3>
                       <p className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
-                        {upcoming.doctorInfo.department}
+                        {upcoming.doctorInfo?.department || "Clinic Wide"}
                       </p>
                       <div className="mt-2 flex items-center gap-3 text-xs font-bold text-slate-600">
                         <span className="flex items-center gap-1.5">
@@ -359,6 +363,7 @@ export default function PatientProfile() {
                     <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       <th className="px-6 py-4">Date & Time</th>
                       <th className="px-6 py-4">Specialist</th>
+                      <th className="px-6 py-4">Service & Reasoning</th>
                       <th className="px-6 py-4">Status</th>
                     </tr>
                   </thead>
@@ -395,11 +400,28 @@ export default function PatientProfile() {
                             <td className="px-6 py-4">
                               <div className="flex flex-col">
                                 <span className="text-sm font-bold text-slate-900">
-                                  {h.doctorInfo.name}
+                                  {h.doctorInfo?.name || "Unassigned / Any"}
                                 </span>
-                                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                                  {h.doctorInfo.department}
+                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                                  {h.doctorInfo?.department || "Clinic Wide"}
                                 </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col gap-1 max-w-[200px]">
+                                <span className="text-sm font-bold text-slate-700 truncate">
+                                  {h.serviceInfo?.title || "General Service"}
+                                </span>
+                                {h.reasonForVisit && (
+                                  <span className="text-[10px] text-slate-500 italic line-clamp-1">
+                                    "{h.reasonForVisit}"
+                                  </span>
+                                )}
+                                {h.internalNotes && (
+                                  <div className="mt-1 px-2 py-1 bg-amber-50 border border-amber-100 rounded text-[9px] font-bold text-amber-700 uppercase">
+                                    Internal: {h.internalNotes}
+                                  </div>
+                                )}
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">

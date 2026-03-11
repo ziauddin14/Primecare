@@ -72,6 +72,12 @@ export default function AdminLayout({
       roles: ["SUPER_ADMIN", "DOCTOR"],
     },
     {
+      label: "Live Schedule",
+      path: "/admin/doctor/schedule",
+      icon: <FaCalendarCheck />,
+      roles: ["SUPER_ADMIN", "RECEPTIONIST", "DOCTOR"],
+    },
+    {
       label: "Patients",
       path: "/admin/patients",
       icon: <FaUserInjured />,

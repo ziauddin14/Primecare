@@ -19,7 +19,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       { $match: { patientId: id } },
       {
         $addFields: {
-          doctorObjId: { $toObjectId: "$doctorId" }
+          doctorObjId: { 
+            $cond: {
+              if: { $and: [ { $ne: ["$doctorId", null] }, { $ne: ["$doctorId", ""] } ] }, 
+              then: { $convert: { input: "$doctorId", to: "objectId", onError: null, onNull: null } }, 
+              else: null 
+            }
+          },
+          serviceObjId: { $convert: { input: "$serviceId", to: "objectId", onError: null, onNull: null } }
         }
       },
       {
@@ -30,7 +37,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           as: "doctorInfo"
         }
       },
-      { $unwind: "$doctorInfo" },
+      {
+        $lookup: {
+          from: "services",
+          localField: "serviceObjId",
+          foreignField: "_id",
+          as: "serviceInfo"
+        }
+      },
+      { $unwind: { path: "$doctorInfo", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$serviceInfo", preserveNullAndEmptyArrays: true } },
       { $sort: { date: -1, startTime: -1 } }
     ]).toArray();
 

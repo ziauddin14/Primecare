@@ -26,14 +26,23 @@ import { AppointmentStatus } from "@/lib/models/Appointment";
 
 type Stats = {
   total: number;
+  requested: number;
   pending: number;
   confirmed: number;
   arrived: number;
   completed: number;
   cancelled: number;
+  noShows: number;
 };
 
 const statusFlow = [
+  {
+    key: "REQUESTED",
+    label: "Requested",
+    color: "bg-purple-100 text-purple-700",
+    border: "border-purple-200",
+    dot: "bg-purple-500",
+  },
   {
     key: "NEW",
     label: "Pending",
@@ -174,15 +183,7 @@ export default function ReceptionDashboard() {
 
   const mainStatsCards = [
     {
-      label: "Total Doctors",
-      value: totalDoctors,
-      growth: "+2",
-      icon: <FaStethoscope />,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
-    },
-    {
-      label: "Total Patients",
+      label: "Active Patients",
       value: totalPatients,
       growth: "+12%",
       icon: <FaUsers />,
@@ -190,20 +191,28 @@ export default function ReceptionDashboard() {
       bg: "bg-indigo-50",
     },
     {
-      label: "Today's Appointments",
-      value: stats?.total || 0,
-      growth: "+5",
-      icon: <FaCalendarAlt />,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
+      label: "Waitlist (Requested)",
+      value: stats?.requested || 0,
+      growth: "Req",
+      icon: <FaClock />,
+      color: "text-purple-600",
+      bg: "bg-purple-50",
     },
     {
-      label: "Completed Visits",
-      value: stats?.completed || 0,
-      growth: "92%",
-      icon: <FaCheckCircle />,
-      color: "text-amber-600",
-      bg: "bg-amber-50",
+      label: "Confirmed Today",
+      value: stats?.confirmed || 0,
+      growth: "Live",
+      icon: <FaCalendarCheck />,
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+    },
+    {
+      label: "No-Shows / Cancelled",
+      value: (stats?.noShows || 0) + (stats?.cancelled || 0),
+      growth: "Today",
+      icon: <FaTimesCircle />,
+      color: "text-red-600",
+      bg: "bg-red-50",
     },
   ];
 
@@ -220,6 +229,12 @@ export default function ReceptionDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push("/admin/doctor/schedule")}
+            className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95"
+          >
+            <FaCalendarAlt /> Live Schedule
+          </button>
           <button
             onClick={load}
             className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm active:scale-95"
@@ -427,12 +442,12 @@ export default function ReceptionDashboard() {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              {app.status === "NEW" && (
+                              {app.status === "REQUESTED" && (
                                 <button
                                   onClick={() =>
                                     updateStatus(app._id, "CONFIRMED")
                                   }
-                                  className="p-2 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-blue-700 transition-all"
+                                  className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-blue-700 transition-all"
                                 >
                                   Confirm
                                 </button>
@@ -442,7 +457,7 @@ export default function ReceptionDashboard() {
                                   onClick={() =>
                                     updateStatus(app._id, "ARRIVED")
                                   }
-                                  className="p-2 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-indigo-700 transition-all"
+                                  className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-indigo-700 transition-all"
                                 >
                                   Arrived
                                 </button>

@@ -1,20 +1,22 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const date = searchParams.get("date") || new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
+
     const client = await clientPromise;
     const db = client.db();
 
-    const today = new Intl.DateTimeFormat("en-CA", { 
-      timeZone: "Asia/Karachi" 
-    }).format(new Date());
+    // Fetch all active doctors for the header
+    const doctors = await db.collection("doctors").find({ isActive: true }).toArray();
 
-    // Fetch all today's appointments with joins
+    // Fetch appointments for the selected date
     const appointments = await db.collection("appointments").aggregate([
-      { $match: { date: today } },
+      { $match: { date } },
       {
         $addFields: {
           patientObjId: { $toObjectId: "$patientId" },
@@ -24,7 +26,8 @@ export async function GET() {
               then: { $toObjectId: "$doctorId" }, 
               else: null 
             }
-          }
+          },
+          serviceObjId: { $toObjectId: "$serviceId" }
         }
       },
       {
@@ -48,21 +51,15 @@ export async function GET() {
       { $sort: { startTime: 1 } }
     ]).toArray();
 
-    // Calculate stats
-    const stats = {
-      total: appointments.length,
-      requested: appointments.filter(a => a.status === "REQUESTED").length,
-      pending: appointments.filter(a => a.status === "NEW").length,
-      confirmed: appointments.filter(a => a.status === "CONFIRMED").length,
-      arrived: appointments.filter(a => a.status === "ARRIVED").length,
-      completed: appointments.filter(a => a.status === "COMPLETED").length,
-      cancelled: appointments.filter(a => a.status === "CANCELLED").length,
-      noShows: appointments.filter(a => a.status === "NO-SHOW").length,
-    };
+    return NextResponse.json({ 
+      ok: true, 
+      date,
+      doctors, 
+      appointments 
+    });
 
-    return NextResponse.json({ ok: true, appointments, stats });
   } catch (err) {
-    console.error("GET /api/admin/today error:", err);
+    console.error("GET /api/admin/doctors/schedule error:", err);
     return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
   }
 }

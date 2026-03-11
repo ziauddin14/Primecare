@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { z } from "zod";
 import { ObjectId } from "mongodb";
+import { NotificationManager } from "@/lib/notifications/NotificationManager";
+import { NotificationEventType } from "@/lib/notifications/types";
 
 export const dynamic = "force-dynamic";
 
@@ -177,6 +179,20 @@ export async function POST(req: NextRequest) {
     };
 
     const result = await db.collection("appointments").insertOne(appointmentDoc);
+
+    // Notification Hub Trigger Point
+    // In a multi-tenant SaaS, this helps scale out communication per customer.
+    await NotificationManager.trigger(NotificationEventType.APPOINTMENT_REQUESTED, {
+      appointmentId: result.insertedId.toString(),
+      patientId: patient._id.toString(),
+      patientName: name,
+      patientPhone: phone,
+      patientEmail: email,
+      doctorName: doctor?.name || "Any Specialist",
+      date,
+      time,
+      clinicName: "Primecare Clinic", // Dynamic per-tenant in future
+    });
 
     return NextResponse.json(
       {
