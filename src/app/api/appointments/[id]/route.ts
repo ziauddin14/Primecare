@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb";
 import { AppointmentStatus } from "@/lib/models/Appointment";
 
 const VALID_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
+  "REQUESTED": ["NEW", "CONFIRMED", "CANCELLED"],
   "NEW": ["CONFIRMED", "CANCELLED"],
   "CONFIRMED": ["ARRIVED", "CANCELLED", "NO-SHOW"],
   "ARRIVED": ["IN CONSULTATION", "CANCELLED", "NO-SHOW"],
@@ -16,7 +17,7 @@ const VALID_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const { status, note, reason } = await req.json();
+    const { status, note, reason, doctorId, date, time, action, paymentStatus } = await req.json();
 
     const client = await clientPromise;
     const db = client.db();
@@ -27,6 +28,100 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ ok: false, message: "Appointment not found" }, { status: 404 });
     }
 
+    const now = new Date();
+
+    // Separate actions
+    if (action === "update_notes") {
+      await db.collection("appointments").updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { internalNotes: note, updatedAt: now } }
+      );
+      return NextResponse.json({ ok: true, message: "Notes updated" });
+    }
+
+    if (action === "update_payment") {
+      await db.collection("appointments").updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { paymentStatus: paymentStatus, updatedAt: now } }
+      );
+      return NextResponse.json({ ok: true, message: "Payment status updated" });
+    }
+
+    if (action === "reschedule") {
+      // Must check if doctor exists and calculate slot
+      let doctor = null;
+      let slotDuration = 15;
+      if (doctorId) {
+        doctor = await db.collection("doctors").findOne({ _id: new ObjectId(doctorId) });
+        if (!doctor) {
+          return NextResponse.json({ ok: false, message: "Selected doctor does not exist" }, { status: 400 });
+        }
+        slotDuration = doctor.schedule.slotDuration || 15;
+      }
+      
+      const [h, m] = time.split(":").map(Number);
+      const endMins = (h * 60 + m + slotDuration);
+      const endTime = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`;
+
+      // Check double booking for doctor
+      if (doctorId) {
+        const existingDoctorSlot = await db.collection("appointments").findOne({
+          _id: { $ne: new ObjectId(id) },
+          doctorId: doctorId,
+          date,
+          startTime: time,
+          status: { $nin: ["CANCELLED", "NO-SHOW"] }
+        });
+        if (existingDoctorSlot) {
+          return NextResponse.json({ ok: false, message: "Slot already booked for the selected doctor" }, { status: 409 });
+        }
+      }
+
+      // Check double booking for patient
+      const existingPatientSlot = await db.collection("appointments").findOne({
+        _id: { $ne: new ObjectId(id) },
+        patientId: appointment.patientId,
+        date,
+        startTime: time,
+        status: { $nin: ["CANCELLED", "NO-SHOW"] }
+      });
+
+      if (existingPatientSlot) {
+        return NextResponse.json({ ok: false, message: "Patient already has an appointment at this time" }, { status: 409 });
+      }
+
+      const historyEntry = {
+        status: appointment.status,
+        changedAt: now,
+        note: note || `Rescheduled to ${date} at ${time}`,
+        updatedBy: "admin"
+      };
+
+      const updateDoc: any = {
+        date,
+        startTime: time,
+        endTime,
+        updatedAt: now
+      };
+      
+      // Update doctor and department if changed
+      if (doctorId !== undefined) {
+        updateDoc.doctorId = doctorId || "";
+        if (doctor) updateDoc.department = doctor.department;
+      }
+
+      await db.collection("appointments").updateOne(
+        { _id: new ObjectId(id) },
+        { 
+          $set: updateDoc,
+          $push: { statusHistory: historyEntry } as any
+        }
+      );
+
+      return NextResponse.json({ ok: true, message: "Appointment rescheduled successfully" });
+    }
+
+    // Default action: Status Update
     const currentStatus = appointment.status as AppointmentStatus;
     const nextStatus = status as AppointmentStatus;
 
@@ -39,7 +134,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     // 3. Prepare Update Object
-    const now = new Date();
     const updateDoc: any = {
       status: nextStatus,
       updatedAt: now,
@@ -63,7 +157,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       status: nextStatus,
       changedAt: now,
       note: note || `Status changed to ${nextStatus}`,
-      updatedBy: "receptionist" // Assume receptionist for now
+      updatedBy: "admin" 
     };
 
     const result = await db.collection("appointments").updateOne(
@@ -80,7 +174,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       history: historyEntry
     });
 
-  } catch (err) {
+  } catch (err: any) {
     console.error("PATCH /api/appointments/[id] error:", err);
     return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
   }

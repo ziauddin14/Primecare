@@ -73,11 +73,45 @@ export async function GET() {
       },
     ];
 
+    const servicesList = [
+      {
+        title: "General Consultation",
+        department: "General Medicine",
+        description: "Routine checkups and illness diagnosis.",
+        isActive: true,
+      },
+      {
+        title: "Dental Checkup",
+        department: "Dental Care",
+        description: "Routine teeth cleaning and examination.",
+        isActive: true,
+      },
+      {
+        title: "Child Vaccination",
+        department: "Pediatrics",
+        description: "Standard vaccination schedules.",
+        isActive: true,
+      },
+      {
+        title: "ECG & Heart Screening",
+        department: "Cardiology",
+        description: "Advanced cardiac assessment.",
+        isActive: true,
+      },
+    ];
+
     // Clear and re-seed
     await db.collection("doctors").deleteMany({});
-    const result = await db.collection("doctors").insertMany(doctorsList);
+    const docResult = await db.collection("doctors").insertMany(doctorsList);
 
-    return NextResponse.json({ ok: true, insertedCount: result.insertedCount });
+    await db.collection("services").deleteMany({});
+    const srvResult = await db.collection("services").insertMany(servicesList);
+
+    return NextResponse.json({ 
+      ok: true, 
+      insertedDoctors: docResult.insertedCount,
+      insertedServices: srvResult.insertedCount
+    });
   } catch (err) {
     console.error("Seed error:", err);
     return NextResponse.json({ ok: false, message: "Seed failed" }, { status: 500 });

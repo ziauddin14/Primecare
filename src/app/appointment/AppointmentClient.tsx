@@ -16,6 +16,8 @@ import {
   FaUserMd,
   FaCalendarAlt,
   FaClock,
+  FaBriefcaseMedical,
+  FaChevronDown,
 } from "react-icons/fa";
 
 type Doctor = {
@@ -24,13 +26,22 @@ type Doctor = {
   department: string;
 };
 
+type Service = {
+  _id: string;
+  title: string;
+  department: string;
+};
+
 type FormState = {
   name: string;
   phone: string;
   email: string;
-  doctorId: string; // Changed from doctor (string) to doctorId (mongoId)
+  doctorId: string; // Optional
+  serviceId: string; // Required
   date: string;
   time: string;
+  reasonForVisit: string;
+  notes: string;
 };
 
 const initialState: FormState = {
@@ -38,8 +49,11 @@ const initialState: FormState = {
   phone: "",
   email: "",
   doctorId: "",
+  serviceId: "",
   date: "",
   time: "",
+  reasonForVisit: "",
+  notes: "",
 };
 
 const fadeInUp = {
@@ -52,8 +66,10 @@ export default function AppointmentClient() {
   const searchParams = useSearchParams();
   const [form, setForm] = useState<FormState>(initialState);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -65,18 +81,33 @@ export default function AppointmentClient() {
   }, []);
 
   useEffect(() => {
-    async function fetchDoctors() {
+    async function fetchData() {
+      setDataLoading(true);
       try {
-        const res = await fetch("/api/doctors");
-        const json = await res.json();
-        if (json.ok) {
-          setDoctors(json.doctors || []);
+        // Fetch services
+        const srvRes = await fetch("/api/services");
+        if (srvRes.ok) {
+          const srvJson = await srvRes.json();
+          setServices(srvJson.services || []);
+        } else {
+          console.error("Failed to fetch services", srvRes.status);
+        }
+
+        // Fetch doctors
+        const docsRes = await fetch("/api/doctors");
+        if (docsRes.ok) {
+          const docsJson = await docsRes.json();
+          setDoctors(docsJson.doctors || []);
+        } else {
+          console.error("Failed to fetch doctors", docsRes.status);
         }
       } catch (err) {
-        console.error("Failed to fetch doctors", err);
+        console.error("Failed to fetch reference data", err);
+      } finally {
+        setDataLoading(false);
       }
     }
-    fetchDoctors();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -95,7 +126,7 @@ export default function AppointmentClient() {
 
   // Fetch Available Slots
   useEffect(() => {
-    if (!form.doctorId || !form.date) {
+    if (!form.date) {
       setAvailableSlots([]);
       return;
     }
@@ -103,13 +134,11 @@ export default function AppointmentClient() {
     async function fetchSlots() {
       setSlotsLoading(true);
       try {
-        const res = await fetch(
-          `/api/slots?doctorId=${form.doctorId}&date=${form.date}`,
-        );
+        const url = `/api/slots?date=${form.date}${form.doctorId ? "&doctorId=" + form.doctorId : ""}`;
+        const res = await fetch(url);
         const json = await res.json();
         if (json.ok) {
           setAvailableSlots(json.availableSlots || []);
-          // Reset time if selected slot is no longer available
           if (form.time && !json.availableSlots.includes(form.time)) {
             setForm((prev) => ({ ...prev, time: "" }));
           }
@@ -135,7 +164,11 @@ export default function AppointmentClient() {
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setSuccessMsg("");
     setErrorMsg("");
-    setErrors((prev) => ({ ...prev, [key]: "" }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -145,15 +178,27 @@ export default function AppointmentClient() {
     setErrorMsg("");
 
     const nextErrors: Record<string, string> = {};
-    if (!form.name.trim()) nextErrors.name = "Required";
-    if (!form.phone.trim()) nextErrors.phone = "Required";
-    if (!form.doctorId) nextErrors.doctorId = "Required";
-    if (!form.date) nextErrors.date = "Required";
-    if (!form.time) nextErrors.time = "Required";
+    if (!form.name.trim()) nextErrors.name = "Full Name is required";
 
-    // Email is optional in new patient model but we'll keep it for better communication if provided
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      nextErrors.email = "Invalid email format";
+    }
+
+    if (!form.phone.trim()) {
+      nextErrors.phone = "Phone number is required";
+    } else if (!/^(\+92|0|92)?3\d{9}$/.test(form.phone)) {
+      nextErrors.phone = "Invalid Pakistani phone format (e.g. 03001234567)";
+    }
+
+    if (!form.serviceId) nextErrors.serviceId = "Please select a service";
+    if (!form.date) nextErrors.date = "Preferred date is required";
+    if (!form.time) nextErrors.time = "Please pick a time slot";
+
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0) {
+      setErrorMsg("Please complete all required fields correctly.");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -165,13 +210,17 @@ export default function AppointmentClient() {
       const json = await res.json();
 
       if (res.ok) {
-        setSuccessMsg(json.message);
+        setSuccessMsg(
+          json.message || "Your appointment request has been received.",
+        );
         setForm(initialState);
       } else {
         setErrorMsg(json.message || "Something went wrong.");
       }
     } catch (err) {
-      setErrorMsg("Connection error. Please try again.");
+      setErrorMsg(
+        "Connection error. Please check your internet and try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -280,19 +329,22 @@ export default function AppointmentClient() {
               )}
             </AnimatePresence>
 
-            <form onSubmit={onSubmit} className="space-y-8">
+            <form onSubmit={onSubmit} className="space-y-6">
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
-                    <FaUser className="text-[14px]" /> Name
+                    <FaUser className="text-[14px]" /> Full Name
                   </label>
                   <input
                     value={form.name}
                     onChange={(e) => updateField("name", e.target.value)}
                     className={`w-full rounded-2xl border ${errors.name ? "border-red-500" : "border-slate-200"} px-5 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all`}
-                    placeholder="Full Name"
+                    placeholder="John Doe"
                     disabled={loading}
                   />
+                  {errors.name && (
+                    <p className="text-red-500 text-xs px-1">{errors.name}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
@@ -305,6 +357,9 @@ export default function AppointmentClient() {
                     placeholder="03001234567"
                     disabled={loading}
                   />
+                  {errors.phone && (
+                    <p className="text-red-500 text-xs px-1">{errors.phone}</p>
+                  )}
                 </div>
               </div>
 
@@ -321,40 +376,110 @@ export default function AppointmentClient() {
                   placeholder="you@example.com"
                   disabled={loading}
                 />
+                {errors.email && (
+                  <p className="text-red-500 text-xs px-1">{errors.email}</p>
+                )}
               </div>
 
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
-                    <FaUserMd className="text-[14px]" /> Clinical Specialist
+                    <FaBriefcaseMedical className="text-[14px]" /> Service
+                    Required *
                   </label>
-                  <select
-                    value={form.doctorId}
-                    onChange={(e) => updateField("doctorId", e.target.value)}
-                    className={`w-full rounded-2xl border ${errors.doctorId ? "border-red-500" : "border-slate-200"} px-5 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all appearance-none bg-white`}
-                    disabled={loading}
-                  >
-                    <option value="">Select Specialist...</option>
-                    {doctors.map((d) => (
-                      <option key={d._id} value={d._id}>
-                        {d.name} ({d.department})
-                      </option>
-                    ))}
-                  </select>
+                  {services.length === 0 && !dataLoading ? (
+                    <div className="w-full rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold text-red-600">
+                      Services unavailable, please refresh or contact clinic.
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <select
+                        value={form.serviceId}
+                        onChange={(e) =>
+                          updateField("serviceId", e.target.value)
+                        }
+                        className={`w-full rounded-2xl border ${errors.serviceId ? "border-red-500" : "border-slate-200"} px-5 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all appearance-none bg-white`}
+                        disabled={loading || dataLoading}
+                      >
+                        <option value="">
+                          {dataLoading
+                            ? "Loading Services..."
+                            : "Select Service..."}
+                        </option>
+                        {services.map((s) => (
+                          <option key={s._id} value={s._id}>
+                            {s.title}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-400">
+                        <FaChevronDown className="text-sm" />
+                      </div>
+                    </div>
+                  )}
+                  {errors.serviceId && (
+                    <p className="text-red-500 text-xs px-1 font-bold italic">
+                      {errors.serviceId}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
-                    <FaCalendarAlt className="text-[14px]" /> Preferred Date
+                    <FaUserMd className="text-[14px]" /> Preferences (Optional)
                   </label>
-                  <input
-                    type="date"
-                    min={minDate}
-                    value={form.date}
-                    onChange={(e) => updateField("date", e.target.value)}
-                    className={`w-full rounded-2xl border ${errors.date ? "border-red-500" : "border-slate-200"} px-5 py-4 text-base font-bold text-slate-900`}
-                    disabled={loading}
-                  />
+                  <div className="relative">
+                    <select
+                      value={form.doctorId}
+                      onChange={(e) => updateField("doctorId", e.target.value)}
+                      className={`w-full rounded-2xl border ${errors.doctorId ? "border-red-500" : "border-slate-200"} px-5 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all appearance-none bg-white`}
+                      disabled={loading || dataLoading}
+                    >
+                      <option value="">
+                        {dataLoading ? "Loading Doctors..." : "Any Specialist"}
+                      </option>
+                      {doctors.map((d) => (
+                        <option key={d._id} value={d._id}>
+                          {d.name} ({d.department})
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-400">
+                      <FaChevronDown className="text-sm" />
+                    </div>
+                  </div>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+                  Symptoms / Reason for Visit
+                </label>
+                <input
+                  value={form.reasonForVisit}
+                  onChange={(e) =>
+                    updateField("reasonForVisit", e.target.value)
+                  }
+                  className={`w-full rounded-2xl border border-slate-200 px-5 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all`}
+                  placeholder="E.g. Fever, routine checkup"
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+                  <FaCalendarAlt className="text-[14px]" /> Preferred Date
+                </label>
+                <input
+                  type="date"
+                  min={minDate}
+                  value={form.date}
+                  onChange={(e) => updateField("date", e.target.value)}
+                  className={`w-full rounded-2xl border ${errors.date ? "border-red-500" : "border-slate-200"} px-5 py-4 text-base font-bold text-slate-900`}
+                  disabled={loading}
+                />
+                {errors.date && (
+                  <p className="text-red-500 text-xs px-1">{errors.date}</p>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -362,12 +487,12 @@ export default function AppointmentClient() {
                   <FaClock className="text-[14px]" />{" "}
                   {slotsLoading
                     ? "Synchronizing Slots..."
-                    : "Available Time Slots"}
+                    : "Preferred Time Slot"}
                 </label>
 
-                {!form.doctorId || !form.date ? (
+                {!form.date ? (
                   <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-xs font-bold text-slate-400 italic">
-                    Please select a doctor and date to view available slots.
+                    Please select a date to view available slots.
                   </div>
                 ) : slotsLoading ? (
                   <div className="flex items-center justify-center py-8">
@@ -402,6 +527,20 @@ export default function AppointmentClient() {
                 )}
               </div>
 
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-1">
+                  Optional Notes
+                </label>
+                <textarea
+                  value={form.notes}
+                  onChange={(e) => updateField("notes", e.target.value)}
+                  className={`w-full rounded-2xl border border-slate-200 px-5 py-4 text-base font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all`}
+                  placeholder="Any additional information..."
+                  rows={3}
+                  disabled={loading}
+                />
+              </div>
+
               <motion.button
                 whileHover={{ scale: loading ? 1 : 1.02 }}
                 whileTap={{ scale: loading ? 1 : 0.98 }}
@@ -417,6 +556,7 @@ export default function AppointmentClient() {
                 ) : (
                   <>
                     <FaCalendarAlt className="text-xl" /> Confirm Appointment
+                    Request
                   </>
                 )}
               </motion.button>

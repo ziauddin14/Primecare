@@ -1,4 +1,5 @@
 export type AppointmentStatus = 
+  | "REQUESTED"
   | "NEW" 
   | "CONFIRMED" 
   | "ARRIVED" 
@@ -17,14 +18,25 @@ export interface StatusHistoryEntry {
 export interface Appointment {
   _id?: string;
   patientId: string;
-  doctorId: string;
-  department: string;
+  doctorId?: string; // optional if not selected
+  serviceId: string;
+  department?: string;
   date: string;       // "2026-03-20"
   startTime: string;  // "10:00"
-  endTime: string;    // "10:15"
+  endTime?: string;    // "10:15"
   status: AppointmentStatus;
   statusHistory: StatusHistoryEntry[];
   
+  // Financial
+  paymentStatus?: "unpaid" | "paid";
+  
+  // Medical
+  reasonForVisit?: string;
+  notes?: string;     // Initial patient notes
+  
+  // Tracking
+  bookingSource?: "website" | "admin" | "walk-in";
+
   // Workflow Timestamps
   confirmedAt?: Date;
   arrivedAt?: Date;
@@ -37,7 +49,6 @@ export interface Appointment {
   internalNotes?: string;
   
   visitType: string;  // "consultation", "follow-up", etc.
-  notes?: string;     // Initial patient notes
   createdAt: Date;
   updatedAt: Date;
 }

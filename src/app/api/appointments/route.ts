@@ -5,15 +5,21 @@ import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
 
-// Updated Zod Schema for validation
 const AppointmentSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   phone: z.string().regex(/^(\+92|0|92)?3\d{9}$/, "Invalid Pakistani phone number format"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
-  doctorId: z.string().min(1, "Please select a doctor"),
-  date: z.string().min(1, "Date is required"),
+  doctorId: z.string().optional().or(z.literal("")),
+  serviceId: z.string().min(1, "Please select a service"),
+  date: z.string().refine((val) => {
+    const selectedDate = new Date(val);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return selectedDate >= today;
+  }, { message: "Past date is not allowed" }),
   time: z.string().min(1, "Time is required"),
-  notes: z.string().optional(),
+  reasonForVisit: z.string().optional().or(z.literal("")),
+  notes: z.string().optional().or(z.literal("")),
 });
 
 // Simple In-Memory Rate Limiting
@@ -52,21 +58,50 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let { name, phone, email, doctorId, date, time, notes } = validation.data;
-    email = email?.trim().toLowerCase();
+    let { name, phone, email, doctorId, serviceId, date, time, reasonForVisit, notes } = validation.data;
+    email = email?.trim().toLowerCase() || "";
     phone = phone.replace(/\s|-/g, "");
 
     const client = await clientPromise;
     const db = client.db();
 
-    // 1. Get Doctor details
-    const doctor = await db.collection("doctors").findOne({ _id: new ObjectId(doctorId) });
-    if (!doctor) {
-      return NextResponse.json({ ok: false, message: "Doctor not found" }, { status: 404 });
+    // 1. Check Service
+    const service = await db.collection("services").findOne({ _id: new ObjectId(serviceId) });
+    if (!service) {
+      return NextResponse.json({ ok: false, message: "Selected service does not exist" }, { status: 400 });
     }
 
-    // 2. Check/Create Patient
-    let patient = await db.collection("patients").findOne({ phone });
+    // 2. Check Doctor if provided
+    let doctor = null;
+    let schedule = {
+      days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: "13:00",
+      breakEnd: "14:00",
+      slotDuration: 30, // Default 30 min clinic slots
+    };
+
+    if (doctorId) {
+      doctor = await db.collection("doctors").findOne({ _id: new ObjectId(doctorId) });
+      if (!doctor) {
+        return NextResponse.json({ ok: false, message: "Selected doctor does not exist" }, { status: 400 });
+      }
+      schedule = doctor.schedule;
+    }
+
+    const dayName = new Date(date).toLocaleDateString("en-US", { weekday: "short" });
+    if (!schedule.days.includes(dayName)) {
+      return NextResponse.json({ ok: false, message: "Clinic or Doctor is closed on this date" }, { status: 400 });
+    }
+
+    const slotDuration = schedule.slotDuration || 15;
+
+    // 3. Check/Create Patient (Check both phone and email)
+    const patientQuery: any[] = [{ phone }];
+    if (email) patientQuery.push({ email });
+    
+    let patient = await db.collection("patients").findOne({ $or: patientQuery });
     if (!patient) {
       const patientDoc = {
         fullName: name,
@@ -78,28 +113,28 @@ export async function POST(req: NextRequest) {
       patient = { ...patientDoc, _id: result.insertedId };
     }
 
-    // 3. Prevent Double Booking
-    // Check if DOCTOR is already booked for this slot
-    const existingDoctorSlot = await db.collection("appointments").findOne({
-      doctorId: doctorId,
-      date,
-      startTime: time,
-      status: { $ne: "CANCELLED" }
-    });
+    // 4. Prevent Double Booking
+    if (doctorId) {
+      const existingDoctorSlot = await db.collection("appointments").findOne({
+        doctorId: doctorId,
+        date,
+        startTime: time,
+        status: { $nin: ["CANCELLED", "NO-SHOW"] }
+      });
 
-    if (existingDoctorSlot) {
-      return NextResponse.json(
-        { ok: false, message: "This slot is already booked for the selected doctor." },
-        { status: 409 }
-      );
+      if (existingDoctorSlot) {
+        return NextResponse.json(
+          { ok: false, message: "This slot is already booked for the selected doctor." },
+          { status: 409 }
+        );
+      }
     }
 
-    // Check if PATIENT already has an appointment at this time
     const existingPatientSlot = await db.collection("appointments").findOne({
       patientId: patient._id.toString(),
       date,
       startTime: time,
-      status: { $ne: "CANCELLED" }
+      status: { $nin: ["CANCELLED", "NO-SHOW"] }
     });
 
     if (existingPatientSlot) {
@@ -109,31 +144,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Calculate endTime (using doctor's slotDuration)
-    const slotDuration = doctor.schedule.slotDuration || 15;
+    // Calculate endTime
     const [h, m] = time.split(":").map(Number);
     const endMins = (h * 60 + m + slotDuration);
     const endTime = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`;
 
-    // 4. Create Appointment
+    // 5. Create Appointment
     const now = new Date();
     const appointmentDoc = {
       patientId: patient._id.toString(),
-      doctorId: doctorId,
-      department: doctor.department,
+      ...(doctorId && { doctorId: doctorId }),
+      serviceId: serviceId,
+      department: doctor ? doctor.department : service.department,
       date,
       startTime: time,
       endTime,
-      status: "NEW",
+      status: "REQUESTED",
       statusHistory: [
         {
-          status: "NEW",
+          status: "REQUESTED",
           changedAt: now,
-          note: "Appointment created via online portal.",
+          note: "Appointment requested via online portal.",
           updatedBy: "system"
         }
       ],
-      visitType: "consultation",
+      paymentStatus: "UNPAID",
+      bookingSource: "website",
+      reasonForVisit: reasonForVisit || "",
       notes: notes || "",
       createdAt: now,
       updatedAt: now,
@@ -144,13 +181,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         ok: true,
-        message: "Appointment successful. Our team will contact you shortly.",
+        message: "Your appointment request has been received.",
         id: result.insertedId,
       },
       { status: 201 }
     );
-  } catch (err) {
+  } catch (err: any) {
     console.error("POST /api/appointments error:", err);
+    if (err.code === 11000) {
+      return NextResponse.json({ ok: false, message: "This slot is already booked for the selected doctor." }, { status: 409 });
+    }
     return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
   }
 }
@@ -161,11 +201,25 @@ export async function GET() {
     const db = client.db();
     
     // Aggregation to join with patients and doctors
+    // Aggregation to join with patients, doctors, and services
     const appointments = await db.collection("appointments").aggregate([
       {
         $addFields: {
-          patientObjId: { $toObjectId: "$patientId" },
-          doctorObjId: { $toObjectId: "$doctorId" }
+          patientObjId: { $convert: { input: "$patientId", to: "objectId", onError: null, onNull: null } },
+          doctorObjId: { 
+            $cond: {
+              if: { $and: [ { $ne: ["$doctorId", null] }, { $ne: ["$doctorId", ""] } ] }, 
+              then: { $convert: { input: "$doctorId", to: "objectId", onError: null, onNull: null } }, 
+              else: null 
+            }
+          },
+          serviceObjId: { 
+            $cond: {
+              if: { $and: [ { $ne: ["$serviceId", null] }, { $ne: ["$serviceId", ""] } ] }, 
+              then: { $convert: { input: "$serviceId", to: "objectId", onError: null, onNull: null } }, 
+              else: null 
+            }
+          }
         }
       },
       {
@@ -184,8 +238,17 @@ export async function GET() {
           as: "doctorInfo"
         }
       },
-      { $unwind: "$patientInfo" },
-      { $unwind: "$doctorInfo" },
+      {
+        $lookup: {
+          from: "services",
+          localField: "serviceObjId",
+          foreignField: "_id",
+          as: "serviceInfo"
+        }
+      },
+      { $unwind: { path: "$patientInfo", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$doctorInfo", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$serviceInfo", preserveNullAndEmptyArrays: true } },
       { $sort: { createdAt: -1 } },
       { $limit: 200 }
     ]).toArray();

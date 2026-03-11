@@ -9,34 +9,49 @@ export async function GET(req: Request) {
     const doctorId = searchParams.get("doctorId");
     const date = searchParams.get("date"); // YYYY-MM-DD
 
-    if (!doctorId || !date) {
-      return NextResponse.json({ ok: false, message: "Missing doctorId or date" }, { status: 400 });
+    if (!date) {
+      return NextResponse.json({ ok: false, message: "Missing date" }, { status: 400 });
     }
 
     const client = await clientPromise;
     const db = client.db();
 
-    // 1. Get Doctor
-    const doctor = await db.collection("doctors").findOne({ _id: new ObjectId(doctorId) });
-    if (!doctor) {
-      return NextResponse.json({ ok: false, message: "Doctor not found" }, { status: 404 });
+    // 1. Get Doctor if provided
+    let doctor = null;
+    let schedule = {
+      days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: "13:00",
+      breakEnd: "14:00",
+      slotDuration: 30, // Default 30 min clinic slots
+    };
+
+    if (doctorId) {
+      doctor = await db.collection("doctors").findOne({ _id: new ObjectId(doctorId) });
+      if (!doctor) {
+        return NextResponse.json({ ok: false, message: "Doctor not found" }, { status: 404 });
+      }
+      schedule = doctor.schedule;
     }
 
-    // 2. Map day name and check if doctor works on that day
+    // 2. Map day name and check
     const dayName = new Date(date).toLocaleDateString("en-US", { weekday: "short" });
-    if (!doctor.schedule.days.includes(dayName)) {
-      return NextResponse.json({ ok: true, availableSlots: [], message: "Doctor is not available on this day" });
+    if (!schedule.days.includes(dayName)) {
+      return NextResponse.json({ ok: true, availableSlots: [], message: "Not available on this day" });
     }
 
     // 3. Generate all slots
-    const allSlots = generateSlots(doctor.schedule);
+    const allSlots = generateSlots(schedule);
 
     // 4. Fetch existing appointments for this doctor and date
-    const appointments = await db.collection("appointments").find({
-      doctorId: doctorId,
+    const query: any = {
       date: date,
       status: { $ne: "CANCELLED" }
-    }).toArray();
+    };
+    if (doctorId) query.doctorId = doctorId;
+
+    const appointments = await db.collection("appointments").find(query).toArray();
 
     const bookedSlots = appointments.map(app => app.startTime);
 
