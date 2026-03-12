@@ -426,7 +426,7 @@ export default function PatientProfile() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span
-                                className={`px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-wider border ${h.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : h.status === "CANCELLED" ? "bg-red-50 text-red-700 border-red-100" : h.status === "NO-SHOW" ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-slate-50 text-slate-600 border-slate-200"}`}
+                                className={`px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-wider border ${h.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : h.status === "CANCELLED" ? "bg-red-50 text-red-700 border-red-100" : h.status === "NO_SHOW" ? "bg-rose-50 text-rose-700 border-rose-100" : "bg-slate-50 text-slate-600 border-slate-200"}`}
                               >
                                 {h.status}
                               </span>

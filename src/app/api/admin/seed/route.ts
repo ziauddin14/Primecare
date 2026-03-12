@@ -88,7 +88,7 @@ export async function POST() {
         serviceId: serviceIds[2],
         date: todayStr,
         startTime: "12:00",
-        status: "ARRIVED", // Active
+        status: "CONFIRMED", 
         visitType: "Follow-up",
         reasonForVisit: "Skin Rash",
         bookingSource: "admin",
@@ -126,7 +126,7 @@ export async function POST() {
         serviceId: serviceIds[2],
         date: todayStr,
         startTime: "16:00",
-        status: "NO-SHOW",
+        status: "NO_SHOW",
         visitType: "Follow-up",
         reasonForVisit: "Allergy",
         createdAt: new Date(),

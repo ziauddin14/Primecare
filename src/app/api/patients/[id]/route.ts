@@ -55,14 +55,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }).format(new Date());
     
     const visitHistory = appointments.filter(a => a.date < now || (a.date === now && a.status === "COMPLETED"));
-    const upcoming = appointments.filter(a => a.date >= now && a.status !== "COMPLETED" && a.status !== "CANCELLED" && a.status !== "NO-SHOW");
+    const upcoming = appointments.filter(a => a.date >= now && a.status !== "COMPLETED" && a.status !== "CANCELLED" && a.status !== "NO_SHOW");
     
     // 3. Stats
     const stats = {
       total: appointments.length,
       completed: appointments.filter(a => a.status === "COMPLETED").length,
       cancelled: appointments.filter(a => a.status === "CANCELLED").length,
-      noShow: appointments.filter(a => a.status === "NO-SHOW").length,
+      noShow: appointments.filter(a => a.status === "NO_SHOW").length,
     };
 
     return NextResponse.json({ 

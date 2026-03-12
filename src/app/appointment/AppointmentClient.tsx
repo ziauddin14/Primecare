@@ -127,12 +127,13 @@ export default function AppointmentClient() {
           date: form.date,
           doctorId: form.doctorId || "",
         });
-        const res = await fetch(`/api/appointments/slots?${query}`);
+        const res = await fetch(`/api/slots?${query}`);
         const json = await res.json();
         if (json.ok) {
-          setAvailableSlots(json.slots || []);
+          const slots = json.availableSlots || [];
+          setAvailableSlots(slots);
           // Clear time if not in new slots
-          if (form.time && !json.slots.includes(form.time)) {
+          if (form.time && !slots.includes(form.time)) {
             setForm((f) => ({ ...f, time: "" }));
           }
         }
@@ -210,10 +211,15 @@ export default function AppointmentClient() {
   if (dataLoading) {
     return (
       <div className="min-h-screen py-24 flex flex-col items-center justify-center gap-6 bg-slate-50">
-        <div className="h-16 w-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm font-black text-slate-400 uppercase tracking-widest animate-pulse">
-          Initializing Portal...
-        </p>
+        <div className="h-20 w-20 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-2xl shadow-blue-100" />
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">
+            PrimeCare
+          </h2>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">
+            Initializing Patient Portal
+          </p>
+        </div>
       </div>
     );
   }

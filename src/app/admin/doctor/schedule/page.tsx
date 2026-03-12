@@ -317,10 +317,9 @@ function ScheduleCard({
 }) {
   const isRequested = appointment.status === "REQUESTED";
   const isConfirmed = appointment.status === "CONFIRMED";
-  const isArrived = appointment.status === "ARRIVED";
   const isCompleted = appointment.status === "COMPLETED";
   const isCancelled =
-    appointment.status === "CANCELLED" || appointment.status === "NO-SHOW";
+    appointment.status === "CANCELLED" || appointment.status === "NO_SHOW";
 
   return (
     <motion.div
@@ -329,7 +328,7 @@ function ScheduleCard({
       className={`group bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all relative overflow-hidden ${isCancelled ? "opacity-50" : ""}`}
     >
       <div
-        className={`absolute left-0 top-0 bottom-0 w-1.5 ${isCancelled ? "bg-red-400" : isArrived ? "bg-indigo-500" : isConfirmed ? "bg-blue-500" : "bg-amber-400"}`}
+        className={`absolute left-0 top-0 bottom-0 w-1.5 ${isCancelled ? "bg-red-400" : isCompleted ? "bg-emerald-500" : isConfirmed ? "bg-blue-500" : "bg-slate-300"}`}
       />
 
       <div className="flex items-center justify-between mb-4">
@@ -338,9 +337,9 @@ function ScheduleCard({
           {appointment.startTime}
         </div>
         <span
-          className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${isArrived ? "bg-indigo-50 text-indigo-600 border border-indigo-100" : isConfirmed ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-slate-100 text-slate-500"}`}
+          className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${isCompleted ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : isConfirmed ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-slate-100 text-slate-500"}`}
         >
-          {appointment.status}
+          {appointment.status.replace("_", "-")}
         </span>
       </div>
 

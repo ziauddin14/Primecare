@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
         doctorId: doctorId,
         date,
         startTime: time,
-        status: { $nin: ["CANCELLED", "NO-SHOW"] }
+        status: { $nin: ["CANCELLED", "NO_SHOW"] }
       });
 
       if (existingDoctorSlot) {
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
       patientId: patient._id.toString(),
       date,
       startTime: time,
-      status: { $nin: ["CANCELLED", "NO-SHOW"] }
+      status: { $nin: ["CANCELLED", "NO_SHOW"] }
     });
 
     if (existingPatientSlot) {

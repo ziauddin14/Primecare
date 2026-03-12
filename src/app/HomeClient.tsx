@@ -94,19 +94,21 @@ export default function HomeClient() {
               className="flex flex-col items-start min-h-[400px]"
             >
               <span className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-700 mb-4">
-                <FaStethoscope className="text-sm" /> Healthcare Reimagined
+                <FaStethoscope className="text-sm" /> Softwaremine Demo Clinic
+                Platform
               </span>
 
               <h1 className="h1-tight min-h-[120px] sm:min-h-[160px]">
-                Premium Care with <br />
-                <span className="text-blue-600">
+                Built by <span className="text-blue-600">Softwaremine</span>{" "}
+                <br />
+                <span className="text-slate-900 text-3xl sm:text-4xl mt-2 block opacity-80">
                   <Typewriter
                     options={{
                       strings: [
-                        "Smart Technology",
-                        "Expert Specialists",
-                        "Patient Comfort",
-                        "Elite Standards",
+                        "Customizable for Clinics",
+                        "High-Performance Tech",
+                        "Elite Medical Standards",
+                        "Modern Patient Portal",
                       ],
                       autoStart: true,
                       loop: true,
@@ -118,9 +120,10 @@ export default function HomeClient() {
               </h1>
 
               <p className="mt-4 subtext max-w-xl leading-relaxed font-medium">
-                Experience healthcare that respects your time. Book appointments
-                instantly with a clinical environment built for your comfort and
-                peace of mind.
+                Experience the Softwaremine portfolio highlight:{" "}
+                <strong>PrimeCare</strong>. A production-ready clinic
+                intelligence platform architected for performance, security, and
+                elite patient experiences.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">

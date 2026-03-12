@@ -54,9 +54,9 @@ export default function Footer() {
               </div>
             </Link>
             <p className="mt-4 text-sm text-slate-500 leading-relaxed max-w-xs">
-              PrimeCare is a modern clinic demo focused on clean experience and
-              smart booking. We provide world-class healthcare with a human
-              touch.
+              PrimeCare is an official Softwaremine Demo Platform. Architected
+              to showcase modern clinical workflows and elite patient portal
+              experiences.
             </p>
             <div className="mt-6 space-y-2 text-sm text-slate-500">
               <p className="flex items-center gap-2">

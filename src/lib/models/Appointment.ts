@@ -1,12 +1,9 @@
 export type AppointmentStatus = 
   | "REQUESTED"
-  | "NEW" 
   | "CONFIRMED" 
-  | "ARRIVED" 
-  | "IN CONSULTATION" 
   | "COMPLETED" 
   | "CANCELLED" 
-  | "NO-SHOW";
+  | "NO_SHOW";
 
 export interface StatusHistoryEntry {
   status: AppointmentStatus;
@@ -39,8 +36,6 @@ export interface Appointment {
 
   // Workflow Timestamps
   confirmedAt?: Date;
-  arrivedAt?: Date;
-  consultationStartedAt?: Date;
   completedAt?: Date;
   cancelledAt?: Date;
   noShowAt?: Date;

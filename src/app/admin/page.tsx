@@ -29,9 +29,7 @@ import { AppointmentStatus } from "@/lib/models/Appointment";
 type Stats = {
   total: number;
   requested: number;
-  pending: number;
   confirmed: number;
-  arrived: number;
   completed: number;
   cancelled: number;
   noShows: number;
@@ -41,13 +39,6 @@ const statusFlow = [
   {
     key: "REQUESTED",
     label: "Requested",
-    color: "bg-purple-100 text-purple-700",
-    border: "border-purple-200",
-    dot: "bg-purple-500",
-  },
-  {
-    key: "NEW",
-    label: "Pending",
     color: "bg-slate-100 text-slate-600",
     border: "border-slate-200",
     dot: "bg-slate-400",
@@ -58,20 +49,6 @@ const statusFlow = [
     color: "bg-blue-50 text-blue-600",
     border: "border-blue-100",
     dot: "bg-blue-500",
-  },
-  {
-    key: "ARRIVED",
-    label: "Arrived",
-    color: "bg-indigo-50 text-indigo-600",
-    border: "border-indigo-100",
-    dot: "bg-indigo-500",
-  },
-  {
-    key: "IN CONSULTATION",
-    label: "In Visit",
-    color: "bg-amber-50 text-amber-600",
-    border: "border-amber-100",
-    dot: "bg-amber-500",
   },
   {
     key: "COMPLETED",
@@ -88,7 +65,7 @@ const statusFlow = [
     dot: "bg-red-500",
   },
   {
-    key: "NO-SHOW",
+    key: "NO_SHOW",
     label: "No-Show",
     color: "bg-rose-50 text-rose-600",
     border: "border-rose-100",
@@ -216,20 +193,28 @@ export default function ReceptionDashboard() {
       bg: "bg-indigo-50",
     },
     {
-      label: "Waitlist (Requested)",
-      value: stats?.requested || 0,
-      growth: "Req",
-      icon: <FaClock />,
-      color: "text-purple-600",
-      bg: "bg-purple-50",
-    },
-    {
       label: "Confirmed Today",
       value: stats?.confirmed || 0,
       growth: "Live",
       icon: <FaCalendarCheck />,
       color: "text-blue-600",
       bg: "bg-blue-50",
+    },
+    {
+      label: "In Waitlist",
+      value: stats?.requested || 0,
+      growth: "New",
+      icon: <FaClock />,
+      color: "text-slate-600",
+      bg: "bg-slate-50",
+    },
+    {
+      label: "Completed Visits",
+      value: stats?.completed || 0,
+      growth: "+5%",
+      icon: <FaCheckCircle />,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
     },
     {
       label: "No-Shows / Cancelled",
@@ -561,11 +546,11 @@ export default function ReceptionDashboard() {
                               {app.status === "CONFIRMED" && (
                                 <button
                                   onClick={() =>
-                                    updateStatus(app._id, "ARRIVED")
+                                    updateStatus(app._id, "COMPLETED")
                                   }
-                                  className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-indigo-700 transition-all"
+                                  className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-700 transition-all"
                                 >
-                                  Arrived
+                                  Complete
                                 </button>
                               )}
                               <button

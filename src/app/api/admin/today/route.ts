@@ -52,12 +52,10 @@ export async function GET() {
     const stats = {
       total: appointments.length,
       requested: appointments.filter(a => a.status === "REQUESTED").length,
-      pending: appointments.filter(a => a.status === "NEW").length,
       confirmed: appointments.filter(a => a.status === "CONFIRMED").length,
-      arrived: appointments.filter(a => a.status === "ARRIVED").length,
       completed: appointments.filter(a => a.status === "COMPLETED").length,
       cancelled: appointments.filter(a => a.status === "CANCELLED").length,
-      noShows: appointments.filter(a => a.status === "NO-SHOW").length,
+      noShows: appointments.filter(a => a.status === "NO_SHOW").length,
     };
 
     return NextResponse.json({ ok: true, appointments, stats });

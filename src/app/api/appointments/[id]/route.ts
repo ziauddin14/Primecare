@@ -6,14 +6,11 @@ import { NotificationManager } from "@/lib/notifications/NotificationManager";
 import { NotificationEventType } from "@/lib/notifications/types";
 
 const VALID_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
-  "REQUESTED": ["NEW", "CONFIRMED", "CANCELLED"],
-  "NEW": ["CONFIRMED", "CANCELLED"],
-  "CONFIRMED": ["ARRIVED", "CANCELLED", "NO-SHOW"],
-  "ARRIVED": ["IN CONSULTATION", "CANCELLED", "NO-SHOW"],
-  "IN CONSULTATION": ["COMPLETED"],
+  "REQUESTED": ["CONFIRMED", "CANCELLED"],
+  "CONFIRMED": ["COMPLETED", "CANCELLED", "NO_SHOW"],
   "COMPLETED": [],
   "CANCELLED": [],
-  "NO-SHOW": []
+  "NO_SHOW": []
 };
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -72,7 +69,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           doctorId: doctorId,
           date,
           startTime: time,
-          status: { $nin: ["CANCELLED", "NO-SHOW"] }
+          status: { $nin: ["CANCELLED", "NO_SHOW"] }
         });
         if (existingDoctorSlot) {
           return NextResponse.json({ ok: false, message: "Slot already booked for the selected doctor" }, { status: 409 });
@@ -85,7 +82,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         patientId: appointment.patientId,
         date,
         startTime: time,
-        status: { $nin: ["CANCELLED", "NO-SHOW"] }
+        status: { $nin: ["CANCELLED", "NO_SHOW"] }
       });
 
       if (existingPatientSlot) {
@@ -143,6 +140,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const nextStatus = status as AppointmentStatus;
 
     // 2. Validate Transition
+    if (!VALID_TRANSITIONS[currentStatus]) {
+       return NextResponse.json({ ok: false, message: "Current status is terminal" }, { status: 400 });
+    }
+
     if (!VALID_TRANSITIONS[currentStatus].includes(nextStatus)) {
       return NextResponse.json({ 
         ok: false, 
@@ -158,14 +159,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // Update specific timestamp field
     if (nextStatus === "CONFIRMED") updateDoc.confirmedAt = now;
-    if (nextStatus === "ARRIVED") updateDoc.arrivedAt = now;
-    if (nextStatus === "IN CONSULTATION") updateDoc.consultationStartedAt = now;
     if (nextStatus === "COMPLETED") updateDoc.completedAt = now;
     if (nextStatus === "CANCELLED") {
       updateDoc.cancelledAt = now;
       if (reason) updateDoc.cancellationReason = reason;
     }
-    if (nextStatus === "NO-SHOW") updateDoc.noShowAt = now;
+    if (nextStatus === "NO_SHOW") updateDoc.noShowAt = now;
 
     if (note) updateDoc.internalNotes = note;
 

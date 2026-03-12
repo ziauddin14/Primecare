@@ -20,7 +20,7 @@ PrimeCare is a modern, high-performance web application designed for elite priva
   - **Input Normalization**: Case-insensitive email and standardized phone matching.
   - **Specialist Pre-selection**: Seamlessly link from doctor profiles to the booking terminal.
 - **💼 Elite Admin Console**:
-  - **Appointments Management**: Full-lifecycle tracking (Requested ➔ Pending ➔ Confirmed ➔ Arrived ➔ In Visit ➔ Completed).
+  - **Appointments Management**: Full-lifecycle tracking (Requested ➔ Confirmed ➔ Completed | Cancelled | No-Show).
   - **Rescheduling & Assignment**: Drag-and-drop style rescheduling with real-time slot validation.
   - **Patient CRM**: Centralized database for patient history and contact management.
   - **Internal Notes & Payments**: Securely track clinical notes and payment statuses (Paid/Unpaid) per visit.

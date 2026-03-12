@@ -27,13 +27,6 @@ const statusFlow = [
   {
     key: "REQUESTED",
     label: "Requested",
-    color: "bg-purple-50 text-purple-600",
-    dot: "bg-purple-500",
-    border: "border-purple-200",
-  },
-  {
-    key: "NEW",
-    label: "Pending",
     color: "bg-slate-100 text-slate-600",
     dot: "bg-slate-400",
     border: "border-slate-200",
@@ -44,20 +37,6 @@ const statusFlow = [
     color: "bg-blue-50 text-blue-600",
     dot: "bg-blue-500",
     border: "border-blue-200",
-  },
-  {
-    key: "ARRIVED",
-    label: "Arrived",
-    color: "bg-indigo-50 text-indigo-600",
-    dot: "bg-indigo-500",
-    border: "border-indigo-200",
-  },
-  {
-    key: "IN CONSULTATION",
-    label: "In Visit",
-    color: "bg-amber-50 text-amber-600",
-    dot: "bg-amber-500",
-    border: "border-amber-200",
   },
   {
     key: "COMPLETED",
@@ -74,7 +53,7 @@ const statusFlow = [
     border: "border-red-200",
   },
   {
-    key: "NO-SHOW",
+    key: "NO_SHOW",
     label: "No-Show",
     color: "bg-rose-50 text-rose-600",
     dot: "bg-rose-500",

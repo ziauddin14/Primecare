@@ -38,7 +38,7 @@ export async function GET(req: Request) {
       total: appointments.length,
       completed: appointments.filter(a => a.status === "COMPLETED").length,
       cancelled: appointments.filter(a => a.status === "CANCELLED").length,
-      noShow: appointments.filter(a => a.status === "NO-SHOW").length,
+      noShow: appointments.filter(a => a.status === "NO_SHOW").length,
       newPatients: 0, // calculated from patient analysis below
       returningPatients: 0 // calculated from patient analysis below
     };
@@ -79,7 +79,7 @@ export async function GET(req: Request) {
           total: { $sum: 1 },
           completed: { $sum: { $cond: [{ $eq: ["$status", "COMPLETED"] }, 1, 0] } },
           cancelled: { $sum: { $cond: [{ $eq: ["$status", "CANCELLED"] }, 1, 0] } },
-          noShow: { $sum: { $cond: [{ $eq: ["$status", "NO-SHOW"] }, 1, 0] } }
+          noShow: { $sum: { $cond: [{ $eq: ["$status", "NO_SHOW"] }, 1, 0] } }
         }
       },
       {

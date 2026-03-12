@@ -130,23 +130,67 @@ export default function LoginPage() {
         </form>
 
         {/* Demo Tip */}
-        <div className="mt-12 p-6 rounded-[2rem] bg-slate-50 border border-slate-100 flex items-center justify-between group">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-blue-600 text-sm shadow-sm">
-              <span className="font-black">?</span>
-            </div>
-            <div>
-              <h4 className="text-[10px] font-black text-slate-900 uppercase">
-                Demo Access
-              </h4>
-              <p className="text-[9px] font-bold text-slate-400">
-                admin / admin123
-              </p>
-            </div>
-          </div>
-          <FaClock className="text-slate-200 group-hover:text-blue-200 transition-colors" />
+        <div className="mt-12 p-6 rounded-[2.5rem] bg-slate-50 border border-slate-100 overflow-hidden group">
+          <DemoAccessReveal />
         </div>
       </motion.div>
     </main>
+  );
+}
+
+function DemoAccessReveal() {
+  const [show, setShow] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-blue-600 text-sm shadow-sm">
+            <span className="font-black">?</span>
+          </div>
+          <div>
+            <h4 className="text-[10px] font-black text-slate-900 uppercase">
+              Demo Access
+            </h4>
+            <p className="text-[9px] font-bold text-slate-400">
+              Agency Portfolio Preview
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShow(!show)}
+          type="button"
+          className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+        >
+          {show ? "Hide Credentials" : "Reveal Access"}
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {show && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="pt-4 border-t border-slate-200/50"
+          >
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-white rounded-xl border border-slate-100">
+                <p className="text-[8px] font-black text-slate-400 uppercase mb-1">
+                  Access Key
+                </p>
+                <p className="text-xs font-bold text-slate-900">admin</p>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-slate-100">
+                <p className="text-[8px] font-black text-slate-400 uppercase mb-1">
+                  Security Hash
+                </p>
+                <p className="text-xs font-bold text-slate-900">primecare123</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
