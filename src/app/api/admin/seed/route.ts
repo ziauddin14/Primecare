@@ -14,10 +14,58 @@ const SERVICES = [
 ];
 
 const DOCTORS = [
-  { name: "Dr. Hassan Ahmed", department: "Cardiology", experience: "12 Years", qualification: "MBBS, MD - Cardiology", availability: { days: ["Monday", "Wednesday", "Friday"], startTime: "09:00", endTime: "17:00" } },
-  { name: "Dr. Sarah Khan", department: "Dermatology", experience: "8 Years", qualification: "MBBS, Diploma in Derm", availability: { days: ["Tuesday", "Thursday", "Saturday"], startTime: "10:00", endTime: "18:00" } },
-  { name: "Dr. Zaid Malik", department: "Pediatrics", experience: "15 Years", qualification: "MBBS, FCPS - Pediatrics", availability: { days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], startTime: "10:00", endTime: "20:00" } },
-  { name: "Dr. Amna Qureshi", department: "Dentistry", experience: "6 Years", qualification: "BDS, MDS", availability: { days: ["Saturday", "Sunday"], startTime: "09:00", endTime: "15:00" } },
+  { 
+    name: "Dr. Hassan Ahmed", 
+    department: "Cardiology", 
+    consultationFee: 120, 
+    schedule: { 
+      days: ["Mon", "Wed", "Fri"], 
+      startTime: "09:00", 
+      endTime: "17:00",
+      slotDuration: 30
+    },
+    isActive: true,
+    bio: "Chief of Cardiology specializing in non-invasive imaging and preventive clinical care."
+  },
+  { 
+    name: "Dr. Sarah Khan", 
+    department: "Dermatology", 
+    consultationFee: 100,
+    schedule: { 
+      days: ["Tue", "Thu", "Sat"], 
+      startTime: "10:00", 
+      endTime: "18:00",
+      slotDuration: 30
+    },
+    isActive: true,
+    bio: "Senior Dermatologist focusing on advanced skincare and medical dermatology."
+  },
+  { 
+    name: "Dr. Zaid Malik", 
+    department: "Pediatrics", 
+    consultationFee: 80,
+    schedule: { 
+      days: ["Mon", "Tue", "Wed", "Thu", "Fri"], 
+      startTime: "10:00", 
+      endTime: "20:00",
+      slotDuration: 30
+    },
+    isActive: true,
+    bio: "Compassionate pediatrician with 15+ years of experience in childhood development."
+  },
+  { 
+    name: "Dr. Amna Qureshi", 
+    department: "Dentistry", 
+    consultationFee: 150,
+    schedule: { 
+      days: ["Sat", "Sun"], 
+      startTime: "09:00", 
+      endTime: "15:00",
+      slotDuration: 30
+    },
+    isActive: true,
+    bio: "Dental specialist with expertise in restorative and aesthetic dentistry."
+  },
 ];
 
 const PATIENTS = [

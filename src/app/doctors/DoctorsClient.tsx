@@ -36,17 +36,26 @@ const stagger = {
 export default function DoctorsClient() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchDoctors() {
+      setLoading(true);
+      setError(null);
       try {
         const res = await fetch("/api/doctors");
+        if (!res.ok) {
+          throw new Error(`HTTP Error: ${res.status}`);
+        }
         const json = await res.json();
         if (json.ok) {
           setDoctors(json.doctors || []);
+        } else {
+          setError(json.message || "Failed to load specialists.");
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to fetch doctors", err);
+        setError(err.message || "Connection error. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -77,8 +86,37 @@ export default function DoctorsClient() {
 
       <Container>
         {loading ? (
-          <div className="section-tight text-center py-20 font-bold text-slate-400">
-            Synchronizing specialist database...
+          <div className="section-tight flex flex-col items-center justify-center py-20 gap-6">
+            <div className="h-16 w-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-2xl shadow-blue-100" />
+            <p className="text-sm font-black text-slate-400 uppercase tracking-widest animate-pulse">
+              Synchronizing Specialist Database...
+            </p>
+          </div>
+        ) : error ? (
+          <div className="section-tight text-center py-20">
+            <div className="bg-red-50 text-red-700 p-8 rounded-[2.5rem] border border-red-100 inline-block max-w-lg">
+              <h3 className="text-lg font-black uppercase mb-2">Sync Error</h3>
+              <p className="font-medium">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-6 px-6 py-3 bg-red-600 text-white rounded-2xl font-bold shadow-lg shadow-red-200 hover:bg-red-700 transition-all active:scale-95"
+              >
+                Retry Connection
+              </button>
+            </div>
+          </div>
+        ) : doctors.length === 0 ? (
+          <div className="section-tight text-center py-20">
+            <div className="h-20 w-20 bg-slate-100 rounded-[2rem] flex items-center justify-center text-slate-300 text-3xl mx-auto mb-6">
+              <FaUserMd />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900">
+              No Specialists Currently Available
+            </h3>
+            <p className="text-slate-500 mt-2 max-w-md mx-auto">
+              Our medical staff is currently being updated. Please check back
+              shortly or call us for direct assistance.
+            </p>
           </div>
         ) : (
           <motion.div
@@ -132,8 +170,13 @@ export default function DoctorsClient() {
                     </p>
                   </div>
                   <p className="text-sm font-bold text-slate-700 leading-tight">
-                    {d.schedule.startTime}–{d.schedule.endTime} (
-                    {d.schedule.days.join("–")})
+                    {d.schedule?.startTime || "N/A"}–
+                    {d.schedule?.endTime || "N/A"}
+                    {d.schedule?.days && (
+                      <span className="ml-1">
+                        ({d.schedule.days.join("–")})
+                      </span>
+                    )}
                   </p>
                 </div>
 
