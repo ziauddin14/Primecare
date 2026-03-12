@@ -5,12 +5,12 @@ import { ObjectId } from "mongodb";
 export const dynamic = "force-dynamic";
 
 const SERVICES = [
-  { title: "General Consultation", department: "General Medicine", price: 50, duration: 20 },
-  { title: "Cardiac Screening", department: "Cardiology", price: 150, duration: 45 },
-  { title: "Dermatology Check", department: "Dermatology", price: 80, duration: 30 },
-  { title: "Pediatric Wellness", department: "Pediatrics", price: 60, duration: 30 },
-  { title: "Orthopedic Assessment", department: "Orthopedics", price: 100, duration: 45 },
-  { title: "Dental Filling", department: "Dentistry", price: 120, duration: 45 },
+  { title: "General Consultation", department: "General Medicine", price: 50, duration: 20, isActive: true },
+  { title: "Cardiac Screening", department: "Cardiology", price: 150, duration: 45, isActive: true },
+  { title: "Dermatology Check", department: "Dermatology", price: 80, duration: 30, isActive: true },
+  { title: "Pediatric Wellness", department: "Pediatrics", price: 60, duration: 30, isActive: true },
+  { title: "Orthopedic Assessment", department: "Orthopedics", price: 100, duration: 45, isActive: true },
+  { title: "Dental Filling", department: "Dentistry", price: 120, duration: 45, isActive: true },
 ];
 
 const DOCTORS = [
