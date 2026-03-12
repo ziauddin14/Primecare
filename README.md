@@ -15,13 +15,19 @@ PrimeCare is a modern, high-performance web application designed for elite priva
   - Page-level optimized metadata for all clinical departments.
   - Zero layout shift (CLS) with **Google Font optimization** (Outfit).
 - **📅 Smart Booking Logic**:
+  - **Real-time Slot Generation**: Dynamic availability based on specialist schedules and existing bookings.
   - **Duplicate Prevention**: Prevents overlapping appointments for the same patient at the same time.
   - **Input Normalization**: Case-insensitive email and standardized phone matching.
   - **Specialist Pre-selection**: Seamlessly link from doctor profiles to the booking terminal.
+- **💼 Elite Admin Console**:
+  - **Appointments Management**: Full-lifecycle tracking (Requested ➔ Pending ➔ Confirmed ➔ Arrived ➔ In Visit ➔ Completed).
+  - **Rescheduling & Assignment**: Drag-and-drop style rescheduling with real-time slot validation.
+  - **Patient CRM**: Centralized database for patient history and contact management.
+  - **Internal Notes & Payments**: Securely track clinical notes and payment statuses (Paid/Unpaid) per visit.
 - **🎨 Premium UI/UX**:
   - Professional aesthetic using **Tailwind CSS 4**.
   - Fluid animations powered by **Framer Motion**.
-  - **AI Chat Support** for instant patient guidance and FAQs.
+  - Brand-integrated **Success Confirmation Cards** and interactive loading states.
 - **📱 Full Responsiveness**: Meticulously crafted for all viewports—from mobile-first designs to 4K desktop layouts.
 
 ## 🛠️ Tech Stack
@@ -72,13 +78,13 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 ```text
 src/
 ├── app/               # Next.js App Router
-│   ├── api/           # Secured API Handlers (Auth, Appointments, Contact)
-│   ├── admin/         # Private Management Console
+│   ├── api/           # Secured API Handlers (Auth, Appointments, Slots, CRM)
+│   ├── admin/         # Private Management Console (Dashboard, Appointments, Patients)
 │   ├── login/         # Secure Admin Sign-in
 │   ├── appointment/    # Specialized Booking Terminal
-│   └── doctors/       # Specialist Profiles
-├── components/        # Optimized UI Components (Navbar, Footer, Client-side Wrappers)
-├── lib/               # Utility functions & Database connectivity
+│   └── doctors/       # Specialist Profiles & Availability
+├── components/        # Optimized UI Components (Navbar, Footer, Admin Layouts)
+├── lib/               # Utility functions, Database connectivity & Slot Logic
 └── middleware.ts      # Auth & API Protection Layer
 ```
 
