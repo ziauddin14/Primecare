@@ -31,6 +31,7 @@ export default function AdminLayout({
   const [userRole, setUserRole] = useState("Unknown");
   const [loading, setLoading] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [clinic, setClinic] = useState<any>(null);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -48,6 +49,12 @@ export default function AdminLayout({
 
     if (cookieName) setUserName(decodeURIComponent(cookieName));
     if (cookieRole) setUserRole(cookieRole);
+
+    fetch("/api/admin/settings")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.ok) setClinic(j.config);
+      });
 
     setLoading(false);
   }, []);
@@ -97,7 +104,7 @@ export default function AdminLayout({
     },
     {
       label: "Settings",
-      path: "#",
+      path: "/admin/settings",
       icon: <FaCog />,
       roles: ["SUPER_ADMIN"],
     },
@@ -131,12 +138,17 @@ export default function AdminLayout({
         >
           {sidebarOpen && (
             <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-100 text-white">
+              <div className="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-100 text-white">
                 <FaHospitalSymbol className="text-xl" />
               </div>
-              <span className="text-xl font-bold text-slate-900 tracking-tight">
-                PrimeCare
-              </span>
+              <div className="flex flex-col">
+                <span className="text-base font-black text-slate-900 leading-none tracking-tight">
+                  {clinic?.name || "Primecare"}
+                </span>
+                <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest mt-1 opacity-80">
+                  Medical Center
+                </span>
+              </div>
             </div>
           )}
           {!sidebarOpen && (
@@ -159,12 +171,12 @@ export default function AdminLayout({
               href={item.path}
               className={`flex items-center gap-4 p-3.5 rounded-xl transition-all font-medium text-sm group relative ${
                 pathname === item.path
-                  ? "bg-blue-50 text-blue-600"
+                  ? "bg-slate-900 text-white shadow-xl shadow-slate-200"
                   : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
               }`}
             >
               <span
-                className={`text-lg ${pathname === item.path ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"}`}
+                className={`text-lg ${pathname === item.path ? "text-white" : "text-slate-400 group-hover:text-slate-600"}`}
               >
                 {item.icon}
               </span>
@@ -172,11 +184,25 @@ export default function AdminLayout({
               {pathname === item.path && (
                 <motion.div
                   layoutId="sidebar-active"
-                  className="absolute left-0 top-2 bottom-2 w-1 bg-blue-600 rounded-r-full"
+                  className="absolute left-0 top-2 bottom-2 w-1 bg-blue-500 rounded-r-full"
                 />
               )}
             </Link>
           ))}
+
+          {sidebarOpen && (
+            <div className="mt-8 mx-2 p-5 rounded-3xl bg-blue-50 border border-blue-100">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">
+                  Demo Mode
+                </span>
+              </div>
+              <p className="text-[9px] font-bold text-blue-600/70 leading-relaxed uppercase">
+                Synthetic data environment for Softwaremine Agency presentation.
+              </p>
+            </div>
+          )}
         </nav>
 
         <div className="p-4 border-t border-slate-100">
@@ -203,7 +229,9 @@ export default function AdminLayout({
             >
               <FaBars />
             </button>
-            <span className="font-bold text-slate-900">PrimeCare</span>
+            <span className="font-black text-slate-900 tracking-tight">
+              {clinic?.name || "Primecare"}
+            </span>
           </div>
 
           <div className="hidden md:flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 w-full max-w-md group focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">

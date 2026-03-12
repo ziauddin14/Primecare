@@ -18,8 +18,10 @@ import {
   FaCalendarAlt,
   FaHospitalUser,
   FaEllipsisV,
-  FaChartPie,
   FaTimes,
+  FaCog,
+  FaMagic,
+  FaShieldAlt,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppointmentStatus } from "@/lib/models/Appointment";
@@ -169,16 +171,39 @@ export default function ReceptionDashboard() {
     }
   };
 
+  const resetDemo = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to reset the demo data? All current changes will be lost.",
+      )
+    )
+      return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/seed", { method: "POST" });
+      if (res.ok) {
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error("Seed failed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     load();
   }, []);
 
   const filteredData = useMemo(() => {
-    return data.filter(
-      (a) =>
-        a.patientInfo?.fullName.toLowerCase().includes(search.toLowerCase()) ||
-        a.patientInfo?.phone.includes(search),
-    );
+    return data.filter((a) => {
+      const pName = a.patientInfo?.fullName || a.patientInfo?.name || "";
+      const pPhone = a.patientInfo?.phone || "";
+      return (
+        pName.toLowerCase().includes(search.toLowerCase()) ||
+        pPhone.includes(search)
+      );
+    });
   }, [data, search]);
 
   const mainStatsCards = [
@@ -230,8 +255,15 @@ export default function ReceptionDashboard() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={resetDemo}
+            className="flex items-center gap-2 px-4 py-2.5 bg-rose-50 text-rose-600 rounded-xl text-xs font-black uppercase tracking-widest border border-rose-100 hover:bg-rose-100 transition-all active:scale-95 group"
+          >
+            <FaMagic className="group-hover:rotate-12 transition-transform" />{" "}
+            Reset Demo
+          </button>
+          <button
             onClick={() => router.push("/admin/doctor/schedule")}
-            className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95"
+            className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-lg shadow-slate-200 hover:bg-black transition-all active:scale-95"
           >
             <FaCalendarAlt /> Live Schedule
           </button>
@@ -242,6 +274,73 @@ export default function ReceptionDashboard() {
             <FaSyncAlt className={loading ? "animate-spin" : "text-sm"} />
           </button>
         </div>
+      </div>
+
+      {/* Demo Alert */}
+      <div className="bg-blue-600 rounded-[2rem] p-6 text-white shadow-2xl shadow-blue-100 relative overflow-hidden">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex items-center gap-6">
+            <div className="h-16 w-16 bg-white/10 rounded-3xl flex items-center justify-center text-3xl backdrop-blur-md border border-white/20">
+              <FaShieldAlt />
+            </div>
+            <div>
+              <h3 className="text-xl font-black tracking-tight">
+                Softwaremine Agency Showcase
+              </h3>
+              <p className="text-blue-100 text-xs font-bold uppercase tracking-widest opacity-80">
+                This is a live preview environment using realistic synthetic
+                data.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="px-5 py-2 bg-emerald-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl">
+              V1.4 Stable
+            </div>
+          </div>
+        </div>
+        <FaHospitalUser className="absolute -right-20 -bottom-20 text-[20rem] text-white/5 -rotate-12" />
+      </div>
+
+      {/* Quick Navigation Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {[
+          {
+            label: "Appointments",
+            path: "/admin/appointments",
+            icon: <FaCalendarCheck />,
+            sub: "Manage clinical load",
+          },
+          {
+            label: "Patient Directory",
+            path: "/admin/patients",
+            icon: <FaUsers />,
+            sub: "Secure medical records",
+          },
+          {
+            label: "Clinic Settings",
+            path: "/admin/settings",
+            icon: <FaCog />,
+            sub: "Branding & Operations",
+          },
+        ].map((nav) => (
+          <button
+            key={nav.label}
+            onClick={() => router.push(nav.path)}
+            className="flex items-center gap-6 p-6 rounded-[2.5rem] bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200 group transition-all text-left"
+          >
+            <div className="h-14 w-14 rounded-2xl bg-slate-50 text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all flex items-center justify-center text-2xl shadow-inner">
+              {nav.icon}
+            </div>
+            <div>
+              <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+                {nav.label}
+              </h4>
+              <p className="text-[10px] font-bold text-slate-400">{nav.sub}</p>
+            </div>
+            <FaChevronRight className="ml-auto text-slate-200 group-hover:text-blue-400 transition-colors" />
+          </button>
+        ))}
       </div>
 
       {/* Analytics Grid */}
@@ -403,14 +502,21 @@ export default function ReceptionDashboard() {
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold text-blue-600 uppercase shadow-inner">
-                                {app.patientInfo?.fullName
+                              <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-black text-blue-600 uppercase shadow-inner">
+                                {(
+                                  app.patientInfo?.fullName ||
+                                  app.patientInfo?.name ||
+                                  "??"
+                                )
                                   .split(" ")
                                   .map((n: any) => n[0])
-                                  .join("")}
+                                  .join("")
+                                  .slice(0, 2)}
                               </div>
                               <span className="text-sm font-bold text-slate-900">
-                                {app.patientInfo?.fullName}
+                                {app.patientInfo?.fullName ||
+                                  app.patientInfo?.name ||
+                                  "Unknown Patient"}
                               </span>
                             </div>
                           </td>
