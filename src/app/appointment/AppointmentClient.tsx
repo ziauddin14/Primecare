@@ -312,7 +312,7 @@ export default function AppointmentClient() {
   return (
     <main className="bg-white min-h-screen pb-20">
       {/* Clinic Header Branding */}
-      <div className="bg-white border-b border-slate-100 py-6">
+      {/* <div className="bg-white border-b border-slate-100 py-6">
         <Container>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
@@ -347,7 +347,7 @@ export default function AppointmentClient() {
             </div>
           </div>
         </Container>
-      </div>
+      </div> */}
 
       <motion.div
         initial="initial"
