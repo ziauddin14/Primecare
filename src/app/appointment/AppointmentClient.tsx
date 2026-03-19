@@ -312,42 +312,6 @@ export default function AppointmentClient() {
   return (
     <main className="bg-white min-h-screen pb-20">
       {/* Clinic Header Branding */}
-      {/* <div className="bg-white border-b border-slate-100 py-6">
-        <Container>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-blue-600 p-3 rounded-2xl text-white text-xl shadow-lg shadow-blue-100">
-                <FaHospital />
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                  {clinic?.name || "Primecare Clinic"}
-                </h2>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  {clinic?.address || "Medical District"}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-right hidden sm:block">
-                <p className="text-[10px] font-black text-slate-400 uppercase">
-                  Support
-                </p>
-                <p className="text-sm font-black text-blue-600">
-                  {clinic?.phone || "+92 300 0000000"}
-                </p>
-              </div>
-              <div className="h-10 w-px bg-slate-100 hidden sm:block" />
-              <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100 text-slate-600">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-tighter">
-                  Live Portal
-                </span>
-              </div>
-            </div>
-          </div>
-        </Container>
-      </div> */}
 
       <motion.div
         initial="initial"
