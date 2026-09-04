@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { requireRole, isAuthError } from "@/lib/auth/guard";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const auth = await requireRole(["ADMIN", "STAFF"]);
+  if (isAuthError(auth)) return auth.error;
+
   try {
     const client = await clientPromise;
     const db = client.db();

@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// Edge middleware cannot reach MongoDB, so this can only check for the
+// presence of the httpOnly session cookie - a UX redirect, not an
+// authorization decision. The `user_role` cookie referenced below is a
+// cosmetic, JS-readable value used only to pick which page to land a signed
+// in user on; it is never treated as proof of role. Every API route that
+// actually reads or mutates data re-verifies the session and role against
+// the `sessions`/`users` collections server-side (see src/lib/auth/guard.ts).
 export function middleware(request: NextRequest) {
-  const session = request.cookies.get("admin_session");
+  const session = request.cookies.get("session");
   const role = request.cookies.get("user_role")?.value;
   const path = request.nextUrl.pathname;
 
@@ -12,19 +19,17 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    // Role-based Path Filtering
-    if (path.startsWith("/admin/analytics") && role === "RECEPTIONIST") {
-       // Receptionists can't see analytics
+    // Cosmetic path routing only - the destination page's own API calls
+    // enforce the real role check server-side.
+    if (path.startsWith("/admin/analytics") && role === "STAFF") {
        return NextResponse.redirect(new URL("/admin", request.url));
     }
 
     if ((path.startsWith("/admin/patients") || path.startsWith("/admin/analytics")) && role === "DOCTOR") {
-       // Doctors have a focused view, redirect to doctor dashboard
        return NextResponse.redirect(new URL("/admin/doctor", request.url));
     }
 
     if (path === "/admin" && role === "DOCTOR") {
-       // Doctors go to their specific dashboard
        return NextResponse.redirect(new URL("/admin/doctor", request.url));
     }
   }

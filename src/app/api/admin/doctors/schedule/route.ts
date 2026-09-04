@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { requireRole, isAuthError } from "@/lib/auth/guard";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  const auth = await requireRole(["ADMIN", "STAFF", "DOCTOR"]);
+  if (isAuthError(auth)) return auth.error;
+
   try {
     const { searchParams } = new URL(req.url);
     const date = searchParams.get("date") || new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());

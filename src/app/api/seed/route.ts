@@ -1,7 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { requireRole, isAuthError } from "@/lib/auth/guard";
+import { logAudit, getClientIp } from "@/lib/auth/audit";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await requireRole(["ADMIN"]);
+  if (isAuthError(auth)) return auth.error;
+
   try {
     const client = await clientPromise;
     const db = client.db();
@@ -107,8 +112,18 @@ export async function GET() {
     await db.collection("services").deleteMany({});
     const srvResult = await db.collection("services").insertMany(servicesList);
 
-    return NextResponse.json({ 
-      ok: true, 
+    await logAudit({
+      actorId: auth.session.userId,
+      actorEmail: auth.session.email,
+      actorRole: auth.session.role,
+      action: "DEMO_DATA_SEEDED",
+      resource: "seed",
+      metadata: { endpoint: "/api/seed" },
+      ip: getClientIp(req),
+    });
+
+    return NextResponse.json({
+      ok: true,
       insertedDoctors: docResult.insertedCount,
       insertedServices: srvResult.insertedCount
     });

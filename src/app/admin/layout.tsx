@@ -37,18 +37,16 @@ export default function AdminLayout({
   const router = useRouter();
 
   useEffect(() => {
-    const getCookie = (name: string) => {
-      if (typeof document === "undefined") return null;
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop()?.split(";").shift();
-    };
-
-    const cookieName = getCookie("user_name");
-    const cookieRole = getCookie("user_role");
-
-    if (cookieName) setUserName(decodeURIComponent(cookieName));
-    if (cookieRole) setUserRole(cookieRole);
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.ok) {
+          setUserName(j.user.name);
+          setUserRole(j.user.role);
+        } else {
+          router.push("/login");
+        }
+      });
 
     fetch("/api/admin/settings")
       .then((r) => r.json())
@@ -57,56 +55,56 @@ export default function AdminLayout({
       });
 
     setLoading(false);
-  }, []);
+  }, [router]);
 
   const menuItems = [
     {
       label: "Dashboard",
       path: "/admin",
       icon: <FaThLarge />,
-      roles: ["SUPER_ADMIN", "RECEPTIONIST"],
+      roles: ["ADMIN", "STAFF"],
     },
     {
       label: "New Booking",
       path: "/appointment",
       icon: <FaCalendarCheck />,
-      roles: ["SUPER_ADMIN", "RECEPTIONIST"],
+      roles: ["ADMIN", "STAFF"],
     },
     {
       label: "Doctors",
       path: "/admin/doctor",
       icon: <FaUserMd />,
-      roles: ["SUPER_ADMIN", "DOCTOR"],
+      roles: ["ADMIN", "DOCTOR"],
     },
     {
       label: "Live Schedule",
       path: "/admin/doctor/schedule",
       icon: <FaCalendarCheck />,
-      roles: ["SUPER_ADMIN", "RECEPTIONIST", "DOCTOR"],
+      roles: ["ADMIN", "STAFF", "DOCTOR"],
     },
     {
       label: "Patients",
       path: "/admin/patients",
       icon: <FaUserInjured />,
-      roles: ["SUPER_ADMIN", "RECEPTIONIST"],
+      roles: ["ADMIN", "STAFF"],
     },
     {
       label: "Appointments",
       path: "/admin/appointments",
       icon: <FaCalendarCheck />,
-      roles: ["SUPER_ADMIN", "RECEPTIONIST", "DOCTOR"],
+      roles: ["ADMIN", "STAFF", "DOCTOR"],
     },
     {
       label: "Analytics",
       path: "/admin/analytics",
       icon: <FaChartPie />,
-      roles: ["SUPER_ADMIN"],
+      roles: ["ADMIN"],
     },
     {
       label: "Settings",
       path: "/admin/settings",
       icon: <FaCog />,
-      roles: ["SUPER_ADMIN"],
+      roles: ["ADMIN"],
     },
   ];
 

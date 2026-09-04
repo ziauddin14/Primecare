@@ -57,15 +57,21 @@ npm install
 
 ### 3. Environment Variables
 
-Create a `.env.local` file in the root directory and add your credentials:
+Copy `.env.example` to `.env.local` and set your MongoDB connection string:
 
 ```env
 MONGODB_URI=your_mongodb_atlas_connection_string
-ADMIN_USER=admin
-ADMIN_PASS=primecare123
 ```
 
-### 4. Run Locally
+### 4. Create an Admin Account
+
+There is no default/demo login. Create the first admin user with:
+
+```bash
+ADMIN_NAME="Clinic Owner" ADMIN_EMAIL="owner@clinic.com" ADMIN_PASSWORD="a-strong-password" MONGODB_URI="..." node scripts/create_admin.mjs
+```
+
+### 5. Run Locally
 
 ```bash
 npm run dev
@@ -90,10 +96,7 @@ src/
 
 ## 🔐 Admin Access
 
-Access the dashboard via `/admin`. Default credentials (if using values in `.env.local` above):
-
-- **User**: `admin`
-- **Pass**: `primecare123`
+Access the dashboard via `/admin`, signing in with an account created by `scripts/create_admin.mjs` (see above). Passwords are hashed (bcrypt); sessions are server-side records, not client-trusted cookies.
 
 ## 👨‍💻 Author
 

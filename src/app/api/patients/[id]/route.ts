@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { requireRole, isAuthError } from "@/lib/auth/guard";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireRole(["ADMIN", "STAFF"]);
+  if (isAuthError(auth)) return auth.error;
+
   try {
     const { id } = await params;
     const client = await clientPromise;

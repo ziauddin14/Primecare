@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { requireRole, isAuthError } from "@/lib/auth/guard";
+import { logAudit, getClientIp } from "@/lib/auth/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -75,7 +77,10 @@ const PATIENTS = [
   { fullName: "Fatima Shah", email: "fatima@example.com", phone: "+92 300 1112223", age: 32, gender: "Female" },
 ];
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const auth = await requireRole(["ADMIN"]);
+  if (isAuthError(auth)) return auth.error;
+
   try {
     const client = await clientPromise;
     const db = client.db();
@@ -183,6 +188,16 @@ export async function POST() {
     ];
 
     await db.collection("appointments").insertMany(appointments);
+
+    await logAudit({
+      actorId: auth.session.userId,
+      actorEmail: auth.session.email,
+      actorRole: auth.session.role,
+      action: "DEMO_DATA_SEEDED",
+      resource: "seed",
+      metadata: { endpoint: "/api/admin/seed" },
+      ip: getClientIp(req),
+    });
 
     return NextResponse.json({ ok: true, message: "Demo Environment Seeded Successfully" });
   } catch (err) {

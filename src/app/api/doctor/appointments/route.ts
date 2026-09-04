@@ -1,30 +1,24 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { cookies } from "next/headers";
+import { requireRole, isAuthError } from "@/lib/auth/guard";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const auth = await requireRole(["ADMIN", "DOCTOR"]);
+  if (isAuthError(auth)) return auth.error;
+  const { session } = auth;
+
   try {
-    const cookieStore = await cookies();
-    const role = cookieStore.get("user_role")?.value;
-    const name = cookieStore.get("user_name")?.value;
-
-    if (!role || !name) {
-       return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
-    }
-
     const client = await clientPromise;
     const db = client.db();
 
-    const today = new Intl.DateTimeFormat("en-CA", { 
-      timeZone: "Asia/Karachi" 
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Karachi"
     }).format(new Date());
 
-    // For Demo: If role is DOCTOR, filter by doctor name (from cookie)
-    // In real app, we'd use doctorId
-    const decodedName = decodeURIComponent(name);
-    
+    const decodedName = session.name;
+
     const appointments = await db.collection("appointments").find({
       date: today,
       "doctorInfo.name": decodedName

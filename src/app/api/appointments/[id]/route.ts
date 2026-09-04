@@ -4,6 +4,8 @@ import { ObjectId } from "mongodb";
 import { AppointmentStatus } from "@/lib/models/Appointment";
 import { NotificationManager } from "@/lib/notifications/NotificationManager";
 import { NotificationEventType } from "@/lib/notifications/types";
+import { requireRole, isAuthError } from "@/lib/auth/guard";
+import { logAudit, getClientIp } from "@/lib/auth/audit";
 
 const VALID_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
   "REQUESTED": ["CONFIRMED", "CANCELLED"],
@@ -14,6 +16,11 @@ const VALID_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
 };
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireRole(["ADMIN", "STAFF"]);
+  if (isAuthError(auth)) return auth.error;
+  const { session } = auth;
+  const ip = getClientIp(req);
+
   try {
     const { id } = await params;
     const { status, note, reason, doctorId, date, time, action, paymentStatus } = await req.json();
@@ -35,6 +42,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         { _id: new ObjectId(id) },
         { $set: { internalNotes: note, updatedAt: now } }
       );
+      await logAudit({
+        actorId: session.userId,
+        actorEmail: session.email,
+        actorRole: session.role,
+        action: "APPOINTMENT_NOTES_UPDATE",
+        resource: "appointment",
+        resourceId: id,
+        ip,
+      });
       return NextResponse.json({ ok: true, message: "Notes updated" });
     }
 
@@ -43,6 +59,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         { _id: new ObjectId(id) },
         { $set: { paymentStatus: paymentStatus, updatedAt: now } }
       );
+      await logAudit({
+        actorId: session.userId,
+        actorEmail: session.email,
+        actorRole: session.role,
+        action: "APPOINTMENT_PAYMENT_UPDATE",
+        resource: "appointment",
+        resourceId: id,
+        metadata: { paymentStatus },
+        ip,
+      });
       return NextResponse.json({ ok: true, message: "Payment status updated" });
     }
 
@@ -93,7 +119,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         status: appointment.status,
         changedAt: now,
         note: note || `Rescheduled to ${date} at ${time}`,
-        updatedBy: "admin"
+        updatedBy: session.email
       };
 
       const updateDoc: any = {
@@ -131,6 +157,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           clinicName: "Primecare Clinic",
         });
       }
+
+      await logAudit({
+        actorId: session.userId,
+        actorEmail: session.email,
+        actorRole: session.role,
+        action: "APPOINTMENT_RESCHEDULE",
+        resource: "appointment",
+        resourceId: id,
+        metadata: { date, time, doctorId: doctorId || null },
+        ip,
+      });
 
       return NextResponse.json({ ok: true, message: "Appointment rescheduled successfully" });
     }
@@ -173,16 +210,27 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       status: nextStatus,
       changedAt: now,
       note: note || `Status changed to ${nextStatus}`,
-      updatedBy: "admin" 
+      updatedBy: session.email
     };
 
     const result = await db.collection("appointments").updateOne(
       { _id: new ObjectId(id) },
-      { 
+      {
         $set: updateDoc,
         $push: { statusHistory: historyEntry }
       } as any
     );
+
+    await logAudit({
+      actorId: session.userId,
+      actorEmail: session.email,
+      actorRole: session.role,
+      action: "APPOINTMENT_STATUS_UPDATE",
+      resource: "appointment",
+      resourceId: id,
+      metadata: { from: currentStatus, to: nextStatus },
+      ip,
+    });
 
     // 5. Trigger Notifications
     if (nextStatus === "CONFIRMED" || nextStatus === "CANCELLED") {

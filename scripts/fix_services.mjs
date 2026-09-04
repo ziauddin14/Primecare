@@ -1,10 +1,7 @@
-import { MongoClient } from "mongodb";
-
-const uri =
-  "mongodb+srv://zu37216_db_user:Ziauddin14@primecare.xottptx.mongodb.net/primecare?retryWrites=true&w=majority&appName=Primecare";
+import { connect } from "./_db.mjs";
 
 async function main() {
-  const client = new MongoClient(uri);
+  const client = connect();
   try {
     await client.connect();
     const db = client.db("primecare");

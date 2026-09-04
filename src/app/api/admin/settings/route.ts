@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ClinicConfig } from "@/lib/models/Clinic";
+import { requireRole, isAuthError } from "@/lib/auth/guard";
+import { logAudit, getClientIp } from "@/lib/auth/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +44,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireRole(["ADMIN"]);
+  if (isAuthError(auth)) return auth.error;
+
   try {
     const data = await req.json();
     const client = await clientPromise;
@@ -58,6 +63,15 @@ export async function POST(req: NextRequest) {
       { $set: configUpdate },
       { upsert: true }
     );
+
+    await logAudit({
+      actorId: auth.session.userId,
+      actorEmail: auth.session.email,
+      actorRole: auth.session.role,
+      action: "CLINIC_SETTINGS_UPDATE",
+      resource: "settings",
+      ip: getClientIp(req),
+    });
 
     return NextResponse.json({ ok: true, message: "Settings updated successfully" });
   } catch (err) {

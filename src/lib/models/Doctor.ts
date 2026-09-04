@@ -16,4 +16,5 @@ export interface Doctor {
   isActive: boolean;
   bio?: string;
   initial?: string;
+  userId?: string; // links to User._id when this doctor has a login account
 }

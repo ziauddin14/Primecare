@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { requireRole, isAuthError } from "@/lib/auth/guard";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
+  const auth = await requireRole(["ADMIN"]);
+  if (isAuthError(auth)) return auth.error;
+
   try {
     const { searchParams } = new URL(req.url);
     const range = searchParams.get("range") || "7d";

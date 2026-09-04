@@ -4,6 +4,7 @@ import { z } from "zod";
 import { ObjectId } from "mongodb";
 import { NotificationManager } from "@/lib/notifications/NotificationManager";
 import { NotificationEventType } from "@/lib/notifications/types";
+import { requireRole, isAuthError } from "@/lib/auth/guard";
 
 export const dynamic = "force-dynamic";
 
@@ -212,10 +213,13 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
+  const auth = await requireRole(["ADMIN", "STAFF", "DOCTOR"]);
+  if (isAuthError(auth)) return auth.error;
+
   try {
     const client = await clientPromise;
     const db = client.db();
-    
+
     // Aggregation to join with patients and doctors
     // Aggregation to join with patients, doctors, and services
     const appointments = await db.collection("appointments").aggregate([

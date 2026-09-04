@@ -1,5 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { requireRole, isAuthError } from "@/lib/auth/guard";
+import { logAudit, getClientIp } from "@/lib/auth/audit";
 
 export async function GET() {
   try {
@@ -12,8 +14,11 @@ export async function GET() {
   }
 }
 
-// For seeding or management
-export async function POST(req: Request) {
+// Doctor record management - creating a doctor profile is an admin action.
+export async function POST(req: NextRequest) {
+  const auth = await requireRole(["ADMIN"]);
+  if (isAuthError(auth)) return auth.error;
+
   try {
     const body = await req.json();
     const client = await clientPromise;
@@ -23,6 +28,17 @@ export async function POST(req: Request) {
       isActive: true,
       createdAt: new Date(),
     });
+
+    await logAudit({
+      actorId: auth.session.userId,
+      actorEmail: auth.session.email,
+      actorRole: auth.session.role,
+      action: "DOCTOR_CREATE",
+      resource: "doctor",
+      resourceId: result.insertedId.toString(),
+      ip: getClientIp(req),
+    });
+
     return NextResponse.json({ ok: true, id: result.insertedId });
   } catch (err) {
     return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
