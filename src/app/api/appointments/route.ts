@@ -5,6 +5,10 @@ import { ObjectId } from "mongodb";
 import { NotificationManager } from "@/lib/notifications/NotificationManager";
 import { NotificationEventType } from "@/lib/notifications/types";
 import { requireRole, isAuthError } from "@/lib/auth/guard";
+import { isValidObjectId } from "@/lib/api/objectId";
+import { badRequest, conflict, serverError, isDuplicateKeyError } from "@/lib/api/responses";
+import { ensureAppIndexes } from "@/lib/db/indexes";
+import { computeSlotFlags } from "@/lib/appointments/slotFlags";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +24,9 @@ const AppointmentSchema = z.object({
     today.setHours(0, 0, 0, 0);
     return selectedDate >= today;
   }, { message: "Past date is not allowed" }),
-  time: z.string().min(1, "Time is required"),
-  reasonForVisit: z.string().optional().or(z.literal("")),
-  notes: z.string().optional().or(z.literal("")),
+  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Invalid time format"),
+  reasonForVisit: z.string().max(1000).optional().or(z.literal("")),
+  notes: z.string().max(1000).optional().or(z.literal("")),
 });
 
 // Simple In-Memory Rate Limiting
@@ -61,12 +65,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let { name, phone, email, doctorId, serviceId, date, time, reasonForVisit, notes } = validation.data;
-    email = email?.trim().toLowerCase() || "";
-    phone = phone.replace(/\s|-/g, "");
+    const { name, doctorId, serviceId, date, time, reasonForVisit, notes } = validation.data;
+    const email = validation.data.email?.trim().toLowerCase() || "";
+    const phone = validation.data.phone.replace(/\s|-/g, "");
+
+    if (!isValidObjectId(serviceId)) {
+      return badRequest("Invalid service selected");
+    }
+    if (doctorId && !isValidObjectId(doctorId)) {
+      return badRequest("Invalid doctor selected");
+    }
 
     const client = await clientPromise;
     const db = client.db();
+    await ensureAppIndexes();
 
     // 1. Check Service
     const service = await db.collection("services").findOne({ _id: new ObjectId(serviceId) });
@@ -101,9 +113,9 @@ export async function POST(req: NextRequest) {
     const slotDuration = schedule.slotDuration || 15;
 
     // 3. Check/Create Patient (Check both phone and email)
-    const patientQuery: any[] = [{ phone }];
+    const patientQuery: Record<string, string>[] = [{ phone }];
     if (email) patientQuery.push({ email });
-    
+
     let patient = await db.collection("patients").findOne({ $or: patientQuery });
     if (!patient) {
       const patientDoc = {
@@ -116,7 +128,11 @@ export async function POST(req: NextRequest) {
       patient = { ...patientDoc, _id: result.insertedId };
     }
 
-    // 4. Prevent Double Booking
+    // 4. Fast-fail pre-checks for a friendly error message. These are NOT
+    // the source of truth for correctness under concurrency - the partial
+    // unique indexes on the appointments collection (see
+    // src/lib/db/indexes.ts) are, and are enforced atomically by MongoDB on
+    // the insertOne below regardless of what this pre-check saw.
     if (doctorId) {
       const existingDoctorSlot = await db.collection("appointments").findOne({
         doctorId: doctorId,
@@ -154,6 +170,7 @@ export async function POST(req: NextRequest) {
 
     // 5. Create Appointment
     const now = new Date();
+    const { doctorSlotActive, patientSlotActive } = computeSlotFlags(doctorId || null, "REQUESTED");
     const appointmentDoc = {
       patientId: patient._id.toString(),
       ...(doctorId && { doctorId: doctorId }),
@@ -177,9 +194,23 @@ export async function POST(req: NextRequest) {
       notes: notes || "",
       createdAt: now,
       updatedAt: now,
+      ...(doctorSlotActive && { doctorSlotActive }),
+      ...(patientSlotActive && { patientSlotActive }),
     };
 
-    const result = await db.collection("appointments").insertOne(appointmentDoc);
+    let result;
+    try {
+      result = await db.collection("appointments").insertOne(appointmentDoc);
+    } catch (err) {
+      if (isDuplicateKeyError(err)) {
+        const msg = err instanceof Error ? err.message : "";
+        const message = msg.includes("patient_slot_unique")
+          ? "Patient already has an appointment at this time."
+          : "This slot is already booked for the selected doctor.";
+        return conflict(message);
+      }
+      throw err;
+    }
 
     // Notification Hub Trigger Point
     // In a multi-tenant SaaS, this helps scale out communication per customer.
@@ -203,12 +234,8 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (err: any) {
-    console.error("POST /api/appointments error:", err);
-    if (err.code === 11000) {
-      return NextResponse.json({ ok: false, message: "This slot is already booked for the selected doctor." }, { status: 409 });
-    }
-    return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
+  } catch (err) {
+    return serverError(err, "POST /api/appointments error:");
   }
 }
 
@@ -226,18 +253,18 @@ export async function GET() {
       {
         $addFields: {
           patientObjId: { $convert: { input: "$patientId", to: "objectId", onError: null, onNull: null } },
-          doctorObjId: { 
+          doctorObjId: {
             $cond: {
-              if: { $and: [ { $ne: ["$doctorId", null] }, { $ne: ["$doctorId", ""] } ] }, 
-              then: { $convert: { input: "$doctorId", to: "objectId", onError: null, onNull: null } }, 
-              else: null 
+              if: { $and: [ { $ne: ["$doctorId", null] }, { $ne: ["$doctorId", ""] } ] },
+              then: { $convert: { input: "$doctorId", to: "objectId", onError: null, onNull: null } },
+              else: null
             }
           },
-          serviceObjId: { 
+          serviceObjId: {
             $cond: {
-              if: { $and: [ { $ne: ["$serviceId", null] }, { $ne: ["$serviceId", ""] } ] }, 
-              then: { $convert: { input: "$serviceId", to: "objectId", onError: null, onNull: null } }, 
-              else: null 
+              if: { $and: [ { $ne: ["$serviceId", null] }, { $ne: ["$serviceId", ""] } ] },
+              then: { $convert: { input: "$serviceId", to: "objectId", onError: null, onNull: null } },
+              else: null
             }
           }
         }
@@ -275,7 +302,6 @@ export async function GET() {
 
     return NextResponse.json({ ok: true, appointments }, { status: 200 });
   } catch (err) {
-    console.error("GET /api/appointments error:", err);
-    return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
+    return serverError(err, "GET /api/appointments error:");
   }
 }

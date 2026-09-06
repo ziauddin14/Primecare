@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { requireRole, isAuthError } from "@/lib/auth/guard";
+import { isValidObjectId } from "@/lib/api/objectId";
+import { badRequest, notFound, serverError } from "@/lib/api/responses";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRole(["ADMIN", "STAFF"]);
@@ -9,13 +11,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   try {
     const { id } = await params;
+    if (!isValidObjectId(id)) {
+      return badRequest("Invalid patient id");
+    }
+
     const client = await clientPromise;
     const db = client.db();
 
     // 1. Fetch Basic Patient Info
     const patient = await db.collection("patients").findOne({ _id: new ObjectId(id) });
     if (!patient) {
-      return NextResponse.json({ ok: false, message: "Patient not found" }, { status: 404 });
+      return notFound("Patient not found");
     }
 
     // 2. Fetch All Appointments for History & Upcoming
@@ -78,7 +84,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     });
 
   } catch (err) {
-    console.error("GET /api/patients/[id] error:", err);
-    return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
+    return serverError(err, "GET /api/patients/[id] error:");
   }
 }

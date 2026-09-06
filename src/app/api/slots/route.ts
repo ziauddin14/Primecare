@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { generateSlots } from "@/lib/utils/generateSlots";
+import { isValidObjectId } from "@/lib/api/objectId";
+import { badRequest, notFound, serverError } from "@/lib/api/responses";
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function GET(req: Request) {
   try {
@@ -9,8 +13,11 @@ export async function GET(req: Request) {
     const doctorId = searchParams.get("doctorId");
     const date = searchParams.get("date"); // YYYY-MM-DD
 
-    if (!date) {
-      return NextResponse.json({ ok: false, message: "Missing date" }, { status: 400 });
+    if (!date || !DATE_RE.test(date)) {
+      return badRequest("Missing or invalid date");
+    }
+    if (doctorId && !isValidObjectId(doctorId)) {
+      return badRequest("Invalid doctor id");
     }
 
     const client = await clientPromise;
@@ -30,7 +37,7 @@ export async function GET(req: Request) {
     if (doctorId) {
       doctor = await db.collection("doctors").findOne({ _id: new ObjectId(doctorId) });
       if (!doctor) {
-        return NextResponse.json({ ok: false, message: "Doctor not found" }, { status: 404 });
+        return notFound("Doctor not found");
       }
       schedule = doctor.schedule;
     }
@@ -45,7 +52,7 @@ export async function GET(req: Request) {
     const allSlots = generateSlots(schedule);
 
     // 4. Fetch existing appointments for this doctor and date
-    const query: any = {
+    const query: Record<string, unknown> = {
       date: date,
       status: { $ne: "CANCELLED" }
     };
@@ -61,7 +68,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, availableSlots });
 
   } catch (err) {
-    console.error("GET /api/slots error:", err);
-    return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
+    return serverError(err, "GET /api/slots error:");
   }
 }

@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { requireRole, isAuthError } from "@/lib/auth/guard";
+import { isValidObjectId } from "@/lib/api/objectId";
+import { serverError } from "@/lib/api/responses";
 
 export const dynamic = "force-dynamic";
+
+const VALID_RANGES = new Set(["today", "7d", "30d"]);
 
 export async function GET(req: Request) {
   const auth = await requireRole(["ADMIN"]);
@@ -11,24 +15,23 @@ export async function GET(req: Request) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const range = searchParams.get("range") || "7d";
+    const requestedRange = searchParams.get("range");
+    const range = requestedRange && VALID_RANGES.has(requestedRange) ? requestedRange : "7d";
 
     const client = await clientPromise;
     const db = client.db();
 
     const now = new Date();
-    let startDate = new Date();
-    let dateFormat = "%Y-%m-%d"; // default for 7d/30d
+    const startDate = new Date();
 
     if (range === "today") {
       startDate.setHours(0, 0, 0, 0);
-      dateFormat = "%H:00"; // For hourly trends
     } else if (range === "7d") {
       startDate.setDate(now.getDate() - 7);
     } else if (range === "30d") {
       startDate.setDate(now.getDate() - 30);
     }
-    
+
     const startDateStr = new Intl.DateTimeFormat("en-CA", { 
       timeZone: "Asia/Karachi" 
     }).format(startDate);
@@ -49,7 +52,7 @@ export async function GET(req: Request) {
 
     // 2. Patient Insights (New vs Returning)
     // For the given range, we check each patient's creation date vs range to see if they are "New"
-    const patientIds = Array.from(new Set(appointments.map(a => a.patientId)));
+    const patientIds = Array.from(new Set(appointments.map(a => a.patientId))).filter(isValidObjectId);
     const patients = await db.collection("patients").find({
       _id: { $in: patientIds.map(id => new ObjectId(id)) }
     }).toArray();
@@ -152,7 +155,6 @@ export async function GET(req: Request) {
     });
 
   } catch (err) {
-    console.error("GET /api/admin/analytics error:", err);
-    return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
+    return serverError(err, "GET /api/admin/analytics error:");
   }
 }

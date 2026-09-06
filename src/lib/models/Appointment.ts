@@ -25,8 +25,8 @@ export interface Appointment {
   statusHistory: StatusHistoryEntry[];
   
   // Financial
-  paymentStatus?: "unpaid" | "paid";
-  
+  paymentStatus?: "UNPAID" | "PAID";
+
   // Medical
   reasonForVisit?: string;
   notes?: string;     // Initial patient notes
@@ -46,4 +46,11 @@ export interface Appointment {
   visitType: string;  // "consultation", "follow-up", etc.
   createdAt: Date;
   updatedAt: Date;
+
+  // Marker fields for the partial unique indexes in src/lib/db/indexes.ts -
+  // present (true) only while this document should be exclusive for its
+  // (doctorId|patientId, date, startTime). Set/unset via
+  // src/lib/appointments/slotFlags.ts, never written directly.
+  doctorSlotActive?: true;
+  patientSlotActive?: true;
 }

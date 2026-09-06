@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { requireRole, isAuthError } from "@/lib/auth/guard";
+import { badRequest, serverError } from "@/lib/api/responses";
 
 export const dynamic = "force-dynamic";
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function GET(req: NextRequest) {
   const auth = await requireRole(["ADMIN", "STAFF", "DOCTOR"]);
@@ -10,7 +13,11 @@ export async function GET(req: NextRequest) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const date = searchParams.get("date") || new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
+    const requestedDate = searchParams.get("date");
+    if (requestedDate && !DATE_RE.test(requestedDate)) {
+      return badRequest("Invalid date format");
+    }
+    const date = requestedDate || new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
 
     const client = await clientPromise;
     const db = client.db();
@@ -63,7 +70,6 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (err) {
-    console.error("GET /api/admin/doctors/schedule error:", err);
-    return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
+    return serverError(err, "GET /api/admin/doctors/schedule error:");
   }
 }

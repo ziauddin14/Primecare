@@ -18,6 +18,7 @@ vi.mock("@/lib/mongodb", () => ({
           dbCalls.push(`insertMany:${name}`);
           return { insertedIds: Object.fromEntries(docs.map((_, i) => [i, `id_${i}`])), insertedCount: docs.length };
         },
+        createIndex: async () => "mock_index",
       }),
     }),
   }),

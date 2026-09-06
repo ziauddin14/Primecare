@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
 import { requireRole, isAuthError } from "@/lib/auth/guard";
 import { logAudit, getClientIp } from "@/lib/auth/audit";
+import { ensureAppIndexes } from "@/lib/db/indexes";
+import { computeSlotFlags } from "@/lib/appointments/slotFlags";
+import type { AppointmentStatus } from "@/lib/models/Appointment";
+import { serverError } from "@/lib/api/responses";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +87,7 @@ export async function POST(req: NextRequest) {
   try {
     const client = await clientPromise;
     const db = client.db();
+    await ensureAppIndexes();
 
     // 1. Clear existing demo-related collections
     await db.collection("services").deleteMany({});
@@ -187,7 +191,15 @@ export async function POST(req: NextRequest) {
       },
     ];
 
-    await db.collection("appointments").insertMany(appointments);
+    const appointmentsWithFlags = appointments.map((a) => {
+      const { doctorSlotActive, patientSlotActive } = computeSlotFlags(a.doctorId?.toString(), a.status as AppointmentStatus);
+      return {
+        ...a,
+        ...(doctorSlotActive && { doctorSlotActive }),
+        ...(patientSlotActive && { patientSlotActive }),
+      };
+    });
+    await db.collection("appointments").insertMany(appointmentsWithFlags);
 
     await logAudit({
       actorId: auth.session.userId,
@@ -201,7 +213,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, message: "Demo Environment Seeded Successfully" });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ ok: false, message: "Seed failed" }, { status: 500 });
+    return serverError(err, "POST /api/admin/seed error:");
   }
 }

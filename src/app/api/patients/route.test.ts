@@ -16,6 +16,10 @@ vi.mock("@/lib/mongodb", () => ({
 
 import { GET } from "./route";
 
+function makeRequest(query = "") {
+  return { url: `http://localhost/api/patients${query}` } as unknown as import("next/server").NextRequest;
+}
+
 beforeEach(() => {
   getSessionMock.mockReset();
 });
@@ -23,25 +27,37 @@ beforeEach(() => {
 describe("GET /api/patients authorization", () => {
   it("rejects an unauthenticated request (401) - patient PII is not publicly readable", async () => {
     getSessionMock.mockResolvedValue(null);
-    const res = await GET();
+    const res = await GET(makeRequest());
     expect(res.status).toBe(401);
   });
 
   it("rejects a DOCTOR session (403) - patients list is ADMIN/STAFF only", async () => {
     getSessionMock.mockResolvedValue({ userId: "u1", name: "Doc", email: "doc@clinic.com", role: "DOCTOR" });
-    const res = await GET();
+    const res = await GET(makeRequest());
     expect(res.status).toBe(403);
   });
 
   it("allows a STAFF session", async () => {
     getSessionMock.mockResolvedValue({ userId: "u1", name: "Reception", email: "staff@clinic.com", role: "STAFF" });
-    const res = await GET();
+    const res = await GET(makeRequest());
     expect(res.status).toBe(200);
   });
 
   it("allows an ADMIN session", async () => {
     getSessionMock.mockResolvedValue({ userId: "u1", name: "Admin", email: "admin@clinic.com", role: "ADMIN" });
-    const res = await GET();
+    const res = await GET(makeRequest());
     expect(res.status).toBe(200);
+  });
+
+  it("rejects an invalid limit query parameter", async () => {
+    getSessionMock.mockResolvedValue({ userId: "u1", name: "Admin", email: "admin@clinic.com", role: "ADMIN" });
+    const res = await GET(makeRequest("?limit=abc"));
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a limit above the maximum", async () => {
+    getSessionMock.mockResolvedValue({ userId: "u1", name: "Admin", email: "admin@clinic.com", role: "ADMIN" });
+    const res = await GET(makeRequest("?limit=99999"));
+    expect(res.status).toBe(400);
   });
 });
