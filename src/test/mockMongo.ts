@@ -71,6 +71,8 @@ export function createMockCollection(initial: Doc[] = []) {
     },
     find(filter: Doc = {}) {
       let result = docs.filter((d) => matches(d, filter));
+      let skipN = 0;
+      let limitN: number | undefined;
       const cursor = {
         sort(spec: Record<string, 1 | -1>) {
           const [[key, dir]] = Object.entries(spec);
@@ -82,8 +84,17 @@ export function createMockCollection(initial: Doc[] = []) {
           });
           return cursor;
         },
+        skip(n: number) {
+          skipN = n;
+          return cursor;
+        },
+        limit(n: number) {
+          limitN = n;
+          return cursor;
+        },
         async toArray() {
-          return result;
+          const sliced = result.slice(skipN, limitN !== undefined ? skipN + limitN : undefined);
+          return sliced;
         },
       };
       return cursor;

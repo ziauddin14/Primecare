@@ -17,6 +17,8 @@ import {
   FaChevronDown,
   FaCog,
   FaThLarge,
+  FaClipboardList,
+  FaConciergeBell,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -93,6 +95,18 @@ export default function AdminLayout({
       path: "/admin/appointments",
       icon: <FaCalendarCheck />,
       roles: ["ADMIN", "STAFF", "DOCTOR"],
+    },
+    {
+      label: "Visits",
+      path: "/admin/visits",
+      icon: <FaClipboardList />,
+      roles: ["ADMIN", "STAFF"],
+    },
+    {
+      label: "Services",
+      path: "/admin/services",
+      icon: <FaConciergeBell />,
+      roles: ["ADMIN"],
     },
     {
       label: "Analytics",

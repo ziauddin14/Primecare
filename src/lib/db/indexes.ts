@@ -20,6 +20,19 @@ let appIndexesEnsured = false;
 //   explicitly warns against assuming one phone/email can't legitimately
 //   belong to more than one patient record.
 // - audit_logs: supports querying a given actor's recent activity.
+//
+// Phase 3 additions:
+// - services: unique index on `title` - inspected live data first (no
+//   existing duplicates), so a clean clinic naming convention is worth
+//   enforcing; duplicate creation is caught (E11000) and mapped to 409.
+// - services: index on `isActive` supports the public "active services
+//   only" query every booking page runs.
+// - visits: unique index on `appointmentId` - one appointment maps to at
+//   most one Visit in Phase 3 (see src/lib/models/Visit.ts); duplicate
+//   visit creation is caught the same way as the appointment slot indexes.
+// - visits: compound indexes on {patientId,visitDate} and
+//   {doctorId,visitDate} support the patient/doctor-scoped,
+//   date-ordered visit lists Phase 3's admin UI and access control need.
 export async function ensureAppIndexes(): Promise<void> {
   if (appIndexesEnsured) return;
   const client = await clientPromise;
@@ -38,6 +51,11 @@ export async function ensureAppIndexes(): Promise<void> {
     db.collection("patients").createIndex({ phone: 1 }, { name: "phone_1" }),
     db.collection("patients").createIndex({ email: 1 }, { name: "email_1" }),
     db.collection("audit_logs").createIndex({ actorId: 1, createdAt: -1 }, { name: "actor_createdAt" }),
+    db.collection("services").createIndex({ title: 1 }, { unique: true, name: "title_unique" }),
+    db.collection("services").createIndex({ isActive: 1 }, { name: "isActive_1" }),
+    db.collection("visits").createIndex({ appointmentId: 1 }, { unique: true, name: "appointment_unique" }),
+    db.collection("visits").createIndex({ patientId: 1, visitDate: -1 }, { name: "patient_visitDate" }),
+    db.collection("visits").createIndex({ doctorId: 1, visitDate: -1 }, { name: "doctor_visitDate" }),
   ]);
 
   appIndexesEnsured = true;

@@ -8,6 +8,10 @@ export function notFound(message = "Not found") {
   return NextResponse.json({ ok: false, message }, { status: 404 });
 }
 
+export function forbidden(message = "Forbidden") {
+  return NextResponse.json({ ok: false, message }, { status: 403 });
+}
+
 export function conflict(message: string) {
   return NextResponse.json({ ok: false, message }, { status: 409 });
 }

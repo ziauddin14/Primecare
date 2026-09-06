@@ -9,7 +9,14 @@ export type AuditAction =
   | "DOCTOR_CREATE"
   | "CLINIC_SETTINGS_UPDATE"
   | "DEMO_DATA_SEEDED"
-  | "AUTHORIZATION_DENIED";
+  | "AUTHORIZATION_DENIED"
+  | "SERVICE_CREATE"
+  | "SERVICE_UPDATE"
+  | "SERVICE_DEACTIVATE"
+  | "VISIT_CREATE"
+  | "VISIT_UPDATE"
+  | "VISIT_COMPLETE"
+  | "VISIT_CANCEL";
 
 export interface AuditLog {
   _id?: string;
@@ -17,7 +24,7 @@ export interface AuditLog {
   actorEmail?: string;
   actorRole?: string;
   action: AuditAction;
-  resource?: string; // "appointment" | "patient" | "doctor" | "user" | "settings" | "seed"
+  resource?: string; // "appointment" | "patient" | "doctor" | "user" | "settings" | "seed" | "service" | "visit"
   resourceId?: string;
   metadata?: Record<string, unknown>;
   ip?: string;
